@@ -125,7 +125,7 @@ private:
         hpdcache_test_transaction_mem_read_resp resp;
 
         //  consume the request from the request ports
-        req.addr = mem_req_read_addr_i.read().to_uint();
+        req.addr = mem_req_read_addr_i.read().to_uint64();
         req.len = mem_req_read_len_i.read().to_uint();
         req.size = mem_req_read_size_i.read().to_uint();
         req.id = mem_req_read_id_i.read().to_uint();
@@ -392,7 +392,7 @@ private:
             mem_req_write_ready_o.write(true);
 
             //  Forward the request to the write process
-            r.addr = mem_req_write_addr_i.read().to_uint();
+            r.addr = mem_req_write_addr_i.read().to_uint64();
             r.len = mem_req_write_len_i.read().to_uint();
             r.size = mem_req_write_size_i.read().to_uint();
             r.id = mem_req_write_id_i.read().to_uint();
