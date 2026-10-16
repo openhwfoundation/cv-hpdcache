@@ -28,7 +28,6 @@ module hpdcache_wrapper
       victimSel: hpdcache_pkg::HPDCACHE_VICTIM_RANDOM,
       dataWaysPerRamWord: 1,
       dataSetsPerRam: 64,
-      dataRamByteEnable: 1'b0,
       accessWords: 8,
       mshrSets: 32,
       mshrWays: 2,

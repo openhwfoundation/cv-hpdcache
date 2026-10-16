@@ -30,7 +30,6 @@ module hpdcache_lint
       victimSel: hpdcache_pkg::HPDCACHE_VICTIM_RANDOM,
       dataWaysPerRamWord: 2,
       dataSetsPerRam: 64,
-      dataRamByteEnable: 1'b1,
       accessWords: 8,
       mshrSets: 32,
       mshrWays: 2,

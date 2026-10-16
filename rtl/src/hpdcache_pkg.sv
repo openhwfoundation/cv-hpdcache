@@ -386,10 +386,6 @@ package hpdcache_pkg;
         int unsigned dataWaysPerRamWord;
         //  Number of sets per RAM
         int unsigned dataSetsPerRam;
-        //  DATA RAM macros implement write byte enable
-        //  -  Write byte enable (1'b1)
-        //  -  Write bit mask (1'b0)
-        bit dataRamByteEnable;
         //  Define the number of memory contiguous words that can be accessed
         //  simultaneously from the cache.
         //  -  This limits the maximum width for the data channel from requesters

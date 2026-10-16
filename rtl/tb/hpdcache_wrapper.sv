@@ -29,7 +29,6 @@ import hpdcache_pkg::*;
         victimSel: `CONF_HPDCACHE_VICTIM_SEL,
         dataWaysPerRamWord: `CONF_HPDCACHE_DATA_WAYS_PER_RAM_WORD,
         dataSetsPerRam: `CONF_HPDCACHE_DATA_SETS_PER_RAM,
-        dataRamByteEnable: `CONF_HPDCACHE_DATA_RAM_WBYTEENABLE,
         accessWords: `CONF_HPDCACHE_ACCESS_WORDS,
         mshrSets: `CONF_HPDCACHE_MSHR_SETS,
         mshrWays: `CONF_HPDCACHE_MSHR_WAYS,
