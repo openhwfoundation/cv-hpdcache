@@ -38,7 +38,7 @@ hpdcache_sram_wmask_1rw #(
     .we,
     .addr,
     .wdata,
-    .wmask('1),
+    .wmask(sram_wmask),
     .rdata
 );
 
