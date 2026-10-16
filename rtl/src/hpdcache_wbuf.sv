@@ -488,7 +488,8 @@ import hpdcache_pkg::*;
 
                 WBUF_OPEN: begin
                     match_open_ptr  = (i == hpdcache_uint32'(wbuf_write_hit_open_dir_ptr));
-                    timeout         = (wbuf_dir_q[i].cnt == (cfg_threshold_i - 1));
+                    timeout         = (cfg_threshold_i == 0)
+                                      | (wbuf_dir_q[i].cnt == (cfg_threshold_i - 1));
                     read_hit        = read_flush_hit_i & wbuf_write_hit_open & match_open_ptr;
                     write_hit       = write_i
                                       & wbuf_write_hit_open

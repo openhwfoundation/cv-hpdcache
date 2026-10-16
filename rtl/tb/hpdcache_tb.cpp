@@ -35,6 +35,7 @@
 #include "sequence_lib/hpdcache_test_random_seq.h"
 #include "sequence_lib/hpdcache_test_read_seq.h"
 #include "sequence_lib/hpdcache_test_unique_set_seq.h"
+#include "sequence_lib/hpdcache_test_wbuf_threshold_seq.h"
 #include "sequence_lib/hpdcache_test_write_seq.h"
 
 class hpdcache_test
@@ -316,6 +317,15 @@ public:
             seq = std::make_shared<hpdcache_test_write_seq>("write");
         } else if (seq_name == "unique_set") {
             seq = std::make_shared<hpdcache_test_unique_set_seq>("unique_set");
+        } else if (seq_name == "wbuf_threshold") {
+            auto s = std::make_shared<hpdcache_test_wbuf_threshold_seq>("wbuf_threshold",
+                                                                        cfg_wbuf_threshold);
+            s->wbuf_empty_i(wbuf_empty);
+            s->mem_req_write_valid_i(mem_req_write_valid);
+            s->mem_req_write_ready_i(mem_req_write_ready);
+            s->mem_resp_write_valid_i(mem_resp_write_valid);
+            s->mem_resp_write_ready_i(mem_resp_write_ready);
+            seq = s;
         } else if (seq_name == "from_trace") {
             seq = std::make_shared<hpdcache_test_from_trace_seq>("from_trace", file_name);
         } else {
