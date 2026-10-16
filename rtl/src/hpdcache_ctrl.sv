@@ -528,7 +528,6 @@ import hpdcache_pkg::*;
 
     logic                    rtab_full;
     logic                    rtab_fence;
-    logic                    rtab_fence_only;
     logic                    rtab_no_pend_trans;
 
     logic                    st1_empty;
@@ -926,7 +925,7 @@ import hpdcache_pkg::*;
 
     // No pending transaction across different handlers
     assign st1_no_pend_trans = st2_empty
-                               & (rtab_empty_o | rtab_fence_only)
+                               & (rtab_empty_o | st1_req.from_rtab)
                                & wbuf_empty_i
                                & mshr_empty_i
                                & flush_empty_i;
@@ -985,7 +984,6 @@ import hpdcache_pkg::*;
         .empty_o                            (rtab_empty_o),
         .full_o                             (rtab_full),
         .fence_o                            (rtab_fence),
-        .fence_only_o                       (rtab_fence_only),
 
         .check_i                            (st1_rtab_check),
         .check_nline_i                      (st1_req_nline),

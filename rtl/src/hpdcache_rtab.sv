@@ -36,10 +36,9 @@ import hpdcache_pkg::*;
     input  logic                  rst_ni,
 
     //  Global control signals
-    output logic                  empty_o,      // RTAB is empty
-    output logic                  full_o,       // RTAB is full
-    output logic                  fence_o,      // Pending instruction with fence in the RTAB
-    output logic                  fence_only_o, // ONLY pending instruction with fence in the RTAB
+    output logic                  empty_o,  // RTAB is empty
+    output logic                  full_o,   // RTAB is full
+    output logic                  fence_o,  // Pending instruction with fence in the RTAB
 
     //  Check RTAB signals
     //     This interface allows to check if there is an address-overlapping
@@ -192,6 +191,7 @@ import hpdcache_pkg::*;
     hpdcache_req_addr_t [N-1:0]  addr;
     logic               [N-1:0]  is_read_bv;
     logic               [N-1:0]  fence_bv;
+    logic                        fence_only;
     logic               [N-1:0]  check_hit;
     logic               [N-1:0]  match_check_nline;
     logic               [N-1:0]  match_check_tail;
@@ -249,7 +249,7 @@ import hpdcache_pkg::*;
         assign fence_bv[gen_i] = deps_q[gen_i].pend_trans;
     end
 
-    assign fence_only_o     = (valid_q == fence_bv);
+    assign fence_only       = (valid_q == fence_bv);
     assign check_hit        = valid_q & match_check_nline;
     assign check_hit_o      = |check_hit;
     assign match_check_tail = check_hit & tail_q;
@@ -437,7 +437,7 @@ import hpdcache_pkg::*;
 
             //  Update pending transaction dependency
             //  {{{
-            deps_rst[i].pend_trans = no_pend_trans_i & fence_only_o;
+            deps_rst[i].pend_trans = no_pend_trans_i & fence_only;
             // }}}
         end
     end
