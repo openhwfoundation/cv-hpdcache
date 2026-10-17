@@ -36,9 +36,10 @@ import hpdcache_pkg::*;
     input  logic                  rst_ni,
 
     //  Global control signals
-    output logic                  empty_o,  // RTAB is empty
-    output logic                  full_o,   // RTAB is full
-    output logic                  fence_o,  // There is a pending instruction with fence in the RTAB
+    output logic                  empty_o,      // RTAB is empty
+    output logic                  full_o,       // RTAB is full
+    output logic                  fence_o,      // Pending instruction with fence in the RTAB
+    output logic                  fence_only_o, // ONLY pending instruction with fence in the RTAB
 
     //  Check RTAB signals
     //     This interface allows to check if there is an address-overlapping
@@ -191,7 +192,6 @@ import hpdcache_pkg::*;
     hpdcache_req_addr_t [N-1:0]  addr;
     logic               [N-1:0]  is_read_bv;
     logic               [N-1:0]  fence_bv;
-    logic                        fence_only;
     logic               [N-1:0]  check_hit;
     logic               [N-1:0]  match_check_nline;
     logic               [N-1:0]  match_check_tail;
@@ -249,7 +249,7 @@ import hpdcache_pkg::*;
         assign fence_bv[gen_i] = deps_q[gen_i].pend_trans;
     end
 
-    assign fence_only       = (valid_q == fence_bv);
+    assign fence_only_o     = (valid_q == fence_bv);
     assign check_hit        = valid_q & match_check_nline;
     assign check_hit_o      = |check_hit;
     assign match_check_tail = check_hit & tail_q;
@@ -421,10 +421,10 @@ import hpdcache_pkg::*;
             //  Update refill dependencies
             //  {{{
             if (refill_i) begin
-                deps_rst[i].mshr_full = waiters_mshr_full_gnt[i];
+                deps_rst[i].mshr_full = match_refill_mshr_set[i];
                 deps_rst[i].mshr_hit = match_refill_nline[i];
                 deps_rst[i].write_miss = match_refill_nline[i];
-                deps_rst[i].dir_unavailable = waiters_dir_unavailable_gnt[i];
+                deps_rst[i].dir_unavailable = match_refill_set[i];
                 deps_rst[i].dir_fetch = match_refill_set[i] & match_refill_way[i];
             end
             //  }}}
@@ -437,7 +437,7 @@ import hpdcache_pkg::*;
 
             //  Update pending transaction dependency
             //  {{{
-            deps_rst[i].pend_trans = no_pend_trans_i & fence_only;
+            deps_rst[i].pend_trans = no_pend_trans_i & fence_only_o;
             // }}}
         end
     end
@@ -603,8 +603,9 @@ import hpdcache_pkg::*;
     //  then set the error bit of the pending request to abort it when replayed
     for (gen_i = 0; gen_i < N; gen_i++) begin : gen_error_set
         assign error_set[gen_i] = valid_q[gen_i] &
-                                  deps_q[gen_i].write_miss &
-                                  match_refill_nline[gen_i] &
+                                  (deps_q[gen_i].write_miss  |
+                                   deps_q[gen_i].pend_trans) &
+                                  match_refill_nline[gen_i]  &
                                   refill_is_error;
     end
     assign error_rst = pop_commit_valid_rst;

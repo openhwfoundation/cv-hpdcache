@@ -23,6 +23,8 @@
  *  Description   : Dcache Memory Write Channels Arbiter
  *  History       :
  */
+import hpdcache_pkg::*;
+
 module hpdcache_mem_req_write_arbiter
 //  Parameters
 //  {{{
@@ -60,6 +62,12 @@ module hpdcache_mem_req_write_arbiter
     //  {{{
     typedef logic [N-1:0] arb_gnt_t;
 
+    //  An Evict carries no data, so its grant must not wait for a last flit
+    typedef struct packed {
+        arb_gnt_t gnt;
+        logic     nodata;
+    } arb_gnt_entry_t;
+
     logic                        req_valid, req_data_valid, req_data_last;
 
     arb_gnt_t                    mem_write_arb_req_data_last;
@@ -71,7 +79,10 @@ module hpdcache_mem_req_write_arbiter
 
     logic                        mem_req_write_w;
     logic                        mem_req_write_wok;
+    logic                        mem_req_write_nodata;
     hpdcache_mem_req_t           mem_req_write;
+
+    arb_gnt_entry_t              mem_write_arb_gnt_wdata, mem_write_arb_gnt_rdata;
 
     genvar                       gen_i;
     //  }}}
@@ -86,6 +97,7 @@ module hpdcache_mem_req_write_arbiter
 
         assign mem_req_write_data_ready_o[gen_i] = mem_write_arb_req_gnt_q[gen_i] &
                                                    mem_write_arb_req_rok &
+                                                   ~mem_write_arb_gnt_rdata.nodata &
                                                    mem_req_write_data_ready_i;
     end
 
@@ -99,16 +111,25 @@ module hpdcache_mem_req_write_arbiter
     //  Write a grant decision into the FIFO
     assign mem_write_arb_req_w = req_valid & mem_req_write_wok;
 
-    //  Read grant FIFO when the NoC is able to receive the data and it is the last flit of data
-    assign mem_write_arb_req_r = mem_req_write_data_ready_i &
-                                 req_data_valid &
-                                 req_data_last;
+    //  Read grant FIFO when the NoC is able to receive the data and it is the last flit of data.
+    //  A request with no data phase retires as soon as its grant reaches the head
+    assign mem_write_arb_req_r = mem_write_arb_req_rok &
+                                 (mem_write_arb_gnt_rdata.nodata |
+                                  (mem_req_write_data_ready_i &
+                                   req_data_valid &
+                                   req_data_last));
 
     //  Accept a new request when the grant FIFO is not full and the NoC can accept the request
     assign mem_req_write_w = req_valid & mem_write_arb_req_wok;
 
     //  Forward the data to the NoC if there is any and there is a grant decision in the FIFO
-    assign mem_req_write_data_valid_o = req_data_valid & mem_write_arb_req_rok;
+    assign mem_req_write_data_valid_o = req_data_valid & mem_write_arb_req_rok &
+                                        ~mem_write_arb_gnt_rdata.nodata;
+
+    assign mem_req_write_nodata = mem_req_write.mem_req_coherence == HPDCACHE_MEM_COHERENCE_EVICT;
+
+    assign mem_write_arb_gnt_wdata = '{gnt: mem_write_arb_req_gnt, nodata: mem_req_write_nodata};
+    assign mem_write_arb_req_gnt_q = mem_write_arb_gnt_rdata.gnt;
     //  }}}
 
     //  Fixed-priority arbiter
@@ -147,16 +168,16 @@ module hpdcache_mem_req_write_arbiter
     hpdcache_fifo_reg #(
         .FIFO_DEPTH    (2),
         .FEEDTHROUGH   (1'b0),
-        .fifo_data_t   (arb_gnt_t)
+        .fifo_data_t   (arb_gnt_entry_t)
     ) req_gnt_fifo_i(
         .clk_i,
         .rst_ni,
         .w_i           (mem_write_arb_req_w),
         .wok_o         (mem_write_arb_req_wok),
-        .wdata_i       (mem_write_arb_req_gnt),
+        .wdata_i       (mem_write_arb_gnt_wdata),
         .r_i           (mem_write_arb_req_r),
         .rok_o         (mem_write_arb_req_rok),
-        .rdata_o       (mem_write_arb_req_gnt_q)
+        .rdata_o       (mem_write_arb_gnt_rdata)
     );
     //  }}}
 
