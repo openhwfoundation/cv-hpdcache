@@ -308,7 +308,7 @@ import hpdcache_pkg::*;
     ) waiters_mshr_full_arb_i (
         .clk_i,
         .rst_ni,
-        .req_i          (waiters_mshr_full),
+        .req_i          (waiters_mshr_full & {N{refill_i}}),
         .gnt_o          (waiters_mshr_full_gnt),
         .ready_i        (refill_i)
     );
@@ -319,7 +319,7 @@ import hpdcache_pkg::*;
     ) waiters_dir_unavailable_arb_i (
         .clk_i,
         .rst_ni,
-        .req_i          (waiters_dir_unavailable),
+        .req_i          (waiters_dir_unavailable & {N{refill_i}}),
         .gnt_o          (waiters_dir_unavailable_gnt),
         .ready_i        (refill_i)
     );
