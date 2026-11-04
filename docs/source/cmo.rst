@@ -123,11 +123,15 @@ To issue a memory fence, the requester shall build the request as follows:
      - *Don't Care*
    * - ``core_req_o.pma.uncacheable``
      - *Don't Care*
+   * - ``core_req_o.pma.bufferable``
+     - *Don't Care*
    * - ``core_req_o.pma.io``
      - *Don't Care*
    * - ``core_req_tag_i``
      - *Don't Care*
    * - ``core_req_pma_i.uncacheable``
+     - *Don't Care*
+   * - ``core_req_pma_i.bufferable``
      - *Don't Care*
    * - ``core_req_pma_i.io``
      - *Don't Care*
@@ -189,12 +193,16 @@ request as follows:
        *Don't Care* otherwise
    * - ``core_req_o.pma.uncacheable``
      - *Don't Care*
+   * - ``core_req_o.pma.bufferable``
+     - *Don't Care*
    * - ``core_req_o.pma.io``
      - *Don't Care*
    * - ``core_req_tag_i``
      - Most significant bits of the address if ``core_req_o.phys_indexed = 0``,
        *Don't Care* otherwise
    * - ``core_req_pma_i.uncacheable``
+     - *Don't Care*
+   * - ``core_req_pma_i.bufferable``
      - *Don't Care*
    * - ``core_req_pma_i.io``
      - *Don't Care*
@@ -254,11 +262,15 @@ invalidation of the HPDcache:
      - *Don't Care*
    * - ``core_req_o.pma.uncacheable``
      - *Don't Care*
+   * - ``core_req_o.pma.bufferable``
+     - *Don't Care*
    * - ``core_req_o.pma.io``
      - *Don't Care*
    * - ``core_req_tag_i``
      - *Don't Care*
    * - ``core_req_pma_i.uncacheable``
+     - *Don't Care*
+   * - ``core_req_pma_i.bufferable``
      - *Don't Care*
    * - ``core_req_pma_i.io``
      - *Don't Care*
@@ -320,6 +332,8 @@ The requester shall build the request as follows to perform a prefetch:
        *Don't Care* otherwise
    * - ``core_req_o.pma.uncacheable``
      - *Don't Care*
+   * - ``core_req_o.pma.bufferable``
+     - Bufferable attribute of the target address (see :ref:`sec_req_bufferability`)
    * - ``core_req_o.pma.io``
      - *Don't Care*
    * - ``core_req_tag_i``
@@ -327,6 +341,8 @@ The requester shall build the request as follows to perform a prefetch:
        *Don't Care* otherwise
    * - ``core_req_pma_i.uncacheable``
      - *Don't Care*
+   * - ``core_req_pma_i.bufferable``
+     - Bufferable attribute of the target address (see :ref:`sec_req_bufferability`)
    * - ``core_req_pma_i.io``
      - *Don't Care*
 

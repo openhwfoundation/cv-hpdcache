@@ -102,11 +102,14 @@ import hpdcache_pkg::*;
         endcase
     end
 
-    assign  cache = (req_i.mem_req_cacheable && !lock) ?
-                        axi_pkg::CACHE_BUFFERABLE |
-                        axi_pkg::CACHE_MODIFIABLE |
-                        axi_pkg::CACHE_RD_ALLOC   |
-                        axi_pkg::CACHE_WR_ALLOC   : axi_pkg::CACHE_MODIFIABLE;
+    //  Memory type of the request: write-back (cacheable and bufferable), write-through
+    //  (cacheable), normal non-cacheable bufferable (bufferable) or non-bufferable. An
+    //  exclusive store is normal non-cacheable non-bufferable.
+    assign  cache = lock ? axi_pkg::CACHE_MODIFIABLE :
+                    axi_pkg::CACHE_MODIFIABLE |
+                    (req_i.mem_req_bufferable ? axi_pkg::CACHE_BUFFERABLE : '0) |
+                    (req_i.mem_req_cacheable  ? axi_pkg::CACHE_RD_ALLOC |
+                                                axi_pkg::CACHE_WR_ALLOC : '0);
 
     always_comb
     begin : resp_decode_comb

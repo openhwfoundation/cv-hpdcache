@@ -92,6 +92,7 @@ import hpdcache_pkg::*;
     output logic                  st2_mshr_alloc_is_prefetch_o,
     output logic                  st2_mshr_alloc_wback_o,
     output logic                  st2_mshr_alloc_dirty_o,
+    output logic                  st2_mshr_alloc_bufferable_o,
 
     //      Refill interface
     input  logic                  refill_req_valid_i,
@@ -142,6 +143,7 @@ import hpdcache_pkg::*;
     output wbuf_data_t            wbuf_write_data_o,
     output wbuf_be_t              wbuf_write_be_o,
     output logic                  wbuf_write_uncacheable_o,
+    output logic                  wbuf_write_bufferable_o,
     input  logic                  wbuf_read_hit_i,
     output logic                  wbuf_read_flush_hit_o,
     output hpdcache_req_addr_t    wbuf_rtab_addr_o,
@@ -163,6 +165,7 @@ import hpdcache_pkg::*;
     output hpdcache_req_data_t    uc_req_data_o,
     output hpdcache_req_be_t      uc_req_be_o,
     output logic                  uc_req_uc_o,
+    output logic                  uc_req_bufferable_o,
     output hpdcache_req_sid_t     uc_req_sid_o,
     output hpdcache_req_tid_t     uc_req_tid_o,
     output logic                  uc_req_need_rsp_o,
@@ -292,6 +295,7 @@ import hpdcache_pkg::*;
     logic                    st2_mshr_alloc_is_prefetch_q;
     logic                    st2_mshr_alloc_wback_q, st2_mshr_alloc_wback_d;
     logic                    st2_mshr_alloc_dirty_q, st2_mshr_alloc_dirty_d;
+    logic                    st2_mshr_alloc_bufferable_q;
     logic                    st2_mshr_alloc_need_rsp_q, st2_mshr_alloc_need_rsp_d;
     hpdcache_req_addr_t      st2_mshr_alloc_addr_q;
     hpdcache_req_sid_t       st2_mshr_alloc_sid_q;
@@ -912,6 +916,7 @@ import hpdcache_pkg::*;
             st2_mshr_alloc_is_prefetch_q <= '0;
             st2_mshr_alloc_wback_q       <= '0;
             st2_mshr_alloc_dirty_q       <= '0;
+            st2_mshr_alloc_bufferable_q  <= '0;
             st2_mshr_alloc_victim_way_q  <= '0;
             st2_flush_alloc_nline_q <= '0;
             st2_flush_alloc_way_q   <= '0;
@@ -933,6 +938,7 @@ import hpdcache_pkg::*;
                 st2_mshr_alloc_is_prefetch_q <= st1_req_is_cmo_prefetch;
                 st2_mshr_alloc_wback_q       <= st2_mshr_alloc_wback_d;
                 st2_mshr_alloc_dirty_q       <= st2_mshr_alloc_dirty_d;
+                st2_mshr_alloc_bufferable_q  <= st1_req.req.pma.bufferable;
                 st2_mshr_alloc_victim_way_q  <= st1_dir_victim_way;
             end
 
@@ -1151,6 +1157,7 @@ import hpdcache_pkg::*;
     assign wbuf_write_addr_o = st1_req_addr;
     assign wbuf_write_data_o = st1_req.req.wdata;
     assign wbuf_write_be_o   = st1_req.req.be;
+    assign wbuf_write_bufferable_o = st1_req.req.pma.bufferable;
     assign wbuf_flush_all_o  = st1_wbuf_flush_all | wbuf_flush_i;
     //  }}}
 
@@ -1172,6 +1179,7 @@ import hpdcache_pkg::*;
     assign st2_mshr_alloc_is_prefetch_o = st2_mshr_alloc_is_prefetch_q;
     assign st2_mshr_alloc_wback_o       = st2_mshr_alloc_wback_q;
     assign st2_mshr_alloc_dirty_o       = st2_mshr_alloc_dirty_q;
+    assign st2_mshr_alloc_bufferable_o  = st2_mshr_alloc_bufferable_q;
     //  }}}
 
     //  Uncacheable request handler outputs
@@ -1184,6 +1192,7 @@ import hpdcache_pkg::*;
     assign uc_req_data_o             = st1_req.req.wdata;
     assign uc_req_be_o               = st1_req.req.be;
     assign uc_req_uc_o               = st1_req_is_uncacheable;
+    assign uc_req_bufferable_o       = st1_req.req.pma.bufferable;
     assign uc_req_sid_o              = st1_req.req.sid;
     assign uc_req_tid_o              = st1_req.req.tid;
     assign uc_req_need_rsp_o         = st1_req.req.need_rsp;
@@ -1785,6 +1794,41 @@ import hpdcache_pkg::*;
             (core_req_valid_i && st0_req_is_amo)
             |-> (HPDcacheCfg.u.wtEn || HPDcacheCfg.u.wbEn)) else
                 $error("ctrl: unexpected amo on read-only configuration");
+
+    //  Check that the cache only holds or writes a cacheline in write-back for requests with the
+    //  bufferable attribute: the MSHR allocations in write-back, the directory updates by a
+    //  load, a prefetch, a store or an AMO that leave a valid cacheline in write-back, and the
+    //  stores written in a write-back cacheline.
+    assert property (@(posedge clk_i) disable iff (rst_ni !== 1'b1)
+            (st2_mshr_alloc_q && st2_mshr_alloc_wback_q) |-> st2_mshr_alloc_bufferable_q) else
+                $error("ctrl: write-back MSHR allocation by a non-bufferable request");
+
+    logic st2_dir_updt_access_q;
+    logic st2_dir_updt_bufferable_q;
+
+    always_ff @(posedge clk_i or negedge rst_ni)
+    begin : st2_dir_updt_assert_ff
+        if (!rst_ni) begin
+            st2_dir_updt_access_q     <= 1'b0;
+            st2_dir_updt_bufferable_q <= 1'b0;
+        end else if (st2_dir_updt_d) begin
+            st2_dir_updt_access_q     <= (st1_req_is_load  | st1_req_is_cmo_prefetch |
+                                          st1_req_is_store | st1_req_is_amo) &
+                                         ~st1_req_is_uncacheable;
+            st2_dir_updt_bufferable_q <= st1_req.req.pma.bufferable;
+        end
+    end
+
+    assert property (@(posedge clk_i) disable iff (rst_ni !== 1'b1)
+            (st2_dir_updt_q && st2_dir_updt_access_q && st2_dir_updt_valid_q &&
+             st2_dir_updt_wback_q && !st2_dir_updt_fetch_q) |-> st2_dir_updt_bufferable_q) else
+                $error("ctrl: cacheline left in write-back by a non-bufferable request");
+
+    assert property (@(posedge clk_i) disable iff (rst_ni !== 1'b1)
+            (st1_req_cachedata_write_enable && st1_req_is_store &&
+             (st1_req_wr_wb || (st1_req_wr_auto && st1_dir_hit_wback)))
+            |-> st1_req.req.pma.bufferable) else
+                $error("ctrl: write-back store by a non-bufferable request");
 `endif
     //  }}}
 endmodule

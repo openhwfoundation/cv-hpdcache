@@ -57,6 +57,7 @@ import hpdcache_pkg::*;
     input  hpdcache_req_data_t    req_data_i,
     input  hpdcache_req_be_t      req_be_i,
     input  logic                  req_uc_i,
+    input  logic                  req_bufferable_i,
     input  hpdcache_req_sid_t     req_sid_i,
     input  hpdcache_req_tid_t     req_tid_i,
     input  logic                  req_need_rsp_i,
@@ -207,6 +208,7 @@ import hpdcache_pkg::*;
     hpdcache_req_data_t   req_data_q;
     hpdcache_req_be_t     req_be_q;
     logic                 req_uc_q;
+    logic                 req_bufferable_q;
     hpdcache_req_sid_t    req_sid_q;
     hpdcache_req_tid_t    req_tid_q;
     logic                 req_need_rsp_q;
@@ -637,6 +639,7 @@ import hpdcache_pkg::*;
         mem_req_read_o.mem_req_size      = req_size_q;
         mem_req_read_o.mem_req_id        = mem_read_id_i;
         mem_req_read_o.mem_req_cacheable = 1'b0;
+        mem_req_read_o.mem_req_bufferable = req_bufferable_q;
         mem_req_read_o.mem_req_command   = HPDCACHE_MEM_READ;
         mem_req_read_o.mem_req_atomic    = HPDCACHE_MEM_ATOMIC_ADD;
 
@@ -666,6 +669,7 @@ import hpdcache_pkg::*;
         mem_req_write_o.mem_req_size      = req_size_q;
         mem_req_write_o.mem_req_id        = mem_write_id_i;
         mem_req_write_o.mem_req_cacheable = 1'b0;
+        mem_req_write_o.mem_req_bufferable = req_bufferable_q;
         unique case (1'b1)
             req_op_q.is_amo_sc: begin
                 mem_req_write_o.mem_req_command = HPDCACHE_MEM_ATOMIC;
@@ -852,6 +856,7 @@ import hpdcache_pkg::*;
             req_addr_q <= '0;
             req_size_q <= '0;
             req_uc_q <= 1'b0;
+            req_bufferable_q <= 1'b0;
             req_need_rsp_q <= 1'b0;
             req_hit_way_q <= '0;
             req_old_data_q <= '0;
@@ -860,6 +865,7 @@ import hpdcache_pkg::*;
             req_addr_q <= req_addr_i;
             req_size_q <= req_size_i;
             req_uc_q <= req_uc_i;
+            req_bufferable_q <= req_bufferable_i;
             req_need_rsp_q <= req_need_rsp_i;
             req_hit_way_q <= req_hit_way_i;
             req_old_data_q <= req_old_data_i;

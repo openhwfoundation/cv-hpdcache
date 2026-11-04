@@ -79,6 +79,10 @@ package hpdcache_pkg;
     //      {{{
     typedef struct packed
     {
+        //  Bufferable attribute of the target address: with uncacheable cleared,
+        //  a write-back region; with uncacheable set, a non-cacheable region whose
+        //  writes may be acknowledged before they reach their destination.
+        logic bufferable;
         logic uncacheable;
         logic io; //  FIXME: for future use
 

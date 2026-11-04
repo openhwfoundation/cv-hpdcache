@@ -32,24 +32,28 @@ public:
         seg[0].set_base(0x00000000ULL);
         seg[0].set_length(0x00004000ULL);
         seg[0].set_uncached(false);
+        seg[0].set_bufferable(true);
         seg[0].set_amo_supported(HPDCACHE_TEST_SEQUENCE_AMO_SUPPORT);
         seg[0].set_wr_policy_hint(hpdcache_test_memory_segment::WR_POLICY_RANDOM);
 
         seg[1].set_base(0x40004000ULL);
         seg[1].set_length(0x00004000ULL);
         seg[1].set_uncached(false);
+        seg[1].set_bufferable(true);
         seg[1].set_amo_supported(HPDCACHE_TEST_SEQUENCE_AMO_SUPPORT);
         seg[1].set_wr_policy_hint(hpdcache_test_memory_segment::WR_POLICY_WB);
 
         seg[2].set_base(0x80008000ULL);
         seg[2].set_length(0x00004000ULL);
         seg[2].set_uncached(false);
+        seg[2].set_bufferable(false);
         seg[2].set_amo_supported(HPDCACHE_TEST_SEQUENCE_AMO_SUPPORT);
         seg[2].set_wr_policy_hint(hpdcache_test_memory_segment::WR_POLICY_WT);
 
         seg[3].set_base(0xC000C000ULL);
         seg[3].set_length(0x00004000ULL);
         seg[3].set_uncached(true);
+        seg[3].set_bufferable(true);
         seg[3].set_amo_supported(HPDCACHE_TEST_SEQUENCE_AMO_SUPPORT);
         seg[3].set_wr_policy_hint(hpdcache_test_memory_segment::WR_POLICY_AUTO);
 
@@ -287,6 +291,7 @@ private:
         uint64_t address = ((base + (addr->read() % length)) / bytes) * bytes;
 
         t->req_addr = address;
+        t->req_bufferable = seg[segn].is_bufferable();
         if (t->is_cmo()) {
             t->req_be = 0;
             t->req_size = 0;
@@ -329,7 +334,8 @@ private:
     }
 
     std::shared_ptr<hpdcache_test_transaction_req> create_sc_transaction(uint64_t addr,
-                                                                         bool uncacheable)
+                                                                         bool uncacheable,
+                                                                         bool bufferable)
     {
         std::shared_ptr<hpdcache_test_transaction_req> t;
 
@@ -351,6 +357,7 @@ private:
         t->req_be = ((1UL << bytes) - 1) << offset;
         t->req_size = sz;
         t->req_uncacheable = uncacheable;
+        t->req_bufferable = bufferable;
         t->req_need_rsp = true;
 
         return t;
@@ -397,7 +404,8 @@ private:
                     }
 
                     t = create_sc_transaction(prev_lr.req_addr.to_uint64(),
-                                              prev_lr.req_uncacheable);
+                                              prev_lr.req_uncacheable,
+                                              prev_lr.req_bufferable);
                     send_transaction(t, delay->read());
                     delay->next();
                 }

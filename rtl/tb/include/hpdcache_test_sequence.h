@@ -75,6 +75,7 @@ public:
         sc_bv<HPDCACHE_PA_WIDTH> base;
         sc_bv<HPDCACHE_PA_WIDTH> length;
         bool uncached;
+        bool bufferable;
         bool amo_supported;
         wr_policy_e wr_policy_hint;
 
@@ -83,6 +84,7 @@ public:
           : base(0)
           , length(0)
           , uncached(false)
+          , bufferable(false)
           , amo_supported(false)
           , wr_policy_hint(WR_POLICY_AUTO)
         { /* empty */
@@ -96,6 +98,8 @@ public:
 
         const bool is_uncached() const { return uncached; }
 
+        const bool is_bufferable() const { return bufferable; }
+
         const bool is_amo_supported() const { return amo_supported; }
 
         const wr_policy_e get_wr_policy_hint() const { return wr_policy_hint; }
@@ -105,6 +109,8 @@ public:
         void set_length(uint64_t length) { this->length = sc_bv<HPDCACHE_PA_WIDTH>(length); }
 
         void set_uncached(bool uncached) { this->uncached = uncached; }
+
+        void set_bufferable(bool bufferable) { this->bufferable = bufferable; }
 
         void set_amo_supported(bool amo_supported) { this->amo_supported = amo_supported; }
 

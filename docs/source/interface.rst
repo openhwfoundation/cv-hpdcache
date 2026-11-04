@@ -299,6 +299,12 @@ CRI Signal Description
      - Indicates whether the access needs to be cached (unset) or not (set).
        Uncacheable accesses are directly forwarded to the memory. It is only
        valid when using physical indexing (``core_req_i.phys_indexed = 1``)
+   * - ``core_req_i.pma.bufferable``
+     - Requester
+     - Indicates whether the memory may buffer the access (set) or not (unset).
+       It is forwarded to the memory interface (see
+       :ref:`sec_req_bufferability`). It is only valid when using physical
+       indexing (``core_req_i.phys_indexed = 1``)
    * - ``core_req_i.pma.io``
      - Requester
      - Indicates whether the request targets input/output (IO) peripherals
@@ -324,6 +330,14 @@ CRI Signal Description
        Uncacheable accesses are directly forwarded to the memory. This signal
        must be delayed of 1 cycle after
        ``(core_req_valid_i & core_req_ready_o) = 1``.
+       It is only valid when using virtual indexing
+       (``core_req_i.phys_indexed = 0``)
+   * - ``core_req_pma_i.bufferable``
+     - Requester
+     - Indicates whether the memory may buffer the access (set) or not (unset).
+       It is forwarded to the memory interface (see
+       :ref:`sec_req_bufferability`). This signal must be delayed of 1 cycle
+       after ``(core_req_valid_i & core_req_ready_o) = 1``.
        It is only valid when using virtual indexing
        (``core_req_i.phys_indexed = 0``)
    * - ``core_req_pma_i.io``
@@ -443,6 +457,9 @@ CMI Signal Descriptions
        the request can be allocated by the cache hierarchy. That is, data can
        be prefetched from memory or can be reused for multiple read
        transactions
+   * - ``mem_req_read_o.mem_req_bufferable``
+     - Cache
+     - Bufferable attribute of the request (see :ref:`sec_req_bufferability`)
 
 
 .. _tab_read_miss_resp_channel_signals:
@@ -520,6 +537,9 @@ CMI Signal Descriptions
        the write is bufferable by the cache hierarchy. This means that the
        write must be visible in a timely manner at the final destination.
        However, write responses can be obtained from an intermediate point
+   * - ``mem_req_write_o.mem_req_bufferable``
+     - Cache
+     - Bufferable attribute of the request (see :ref:`sec_req_bufferability`)
 
 
 .. _tab_write_data_channel_signals:
@@ -956,6 +976,123 @@ shall be decoded when the ``core_req_valid_i``, ``core_req_ready_o`` and the
    address is accessed with different values in the uncacheable attribute, the
    behavior of the cache for that address is unpredictable**.
 
+.. _sec_req_bufferability:
+
+Bufferability
+~~~~~~~~~~~~~
+
+The request interface implements a bufferable bit
+(``core_req_i.pma.bufferable`` or ``core_req_pma_i.bufferable``), decoded as
+the uncacheable bit (see :ref:`sec_req_cacheability`). With the uncacheable bit,
+it gives the memory type of the target address:
+
+.. list-table:: Memory type of a request
+   :widths: 20 20 60
+   :header-rows: 1
+
+   * - ``uncacheable``
+     - ``bufferable``
+     - Memory type
+   * - 0
+     - 1
+     - Write-back
+   * - 0
+     - 0
+     - Write-through
+   * - 1
+     - 1
+     - Non-cacheable, bufferable: a write may be acknowledged before it
+       reaches its destination
+   * - 1
+     - 0
+     - Non-cacheable, non-bufferable
+
+The HPDcache forwards the bufferable bit to the ``mem_req_bufferable`` signal of
+the memory requests of the access:
+
+- a refill carries the bufferable bit of the request that missed;
+- a write of the write buffer carries the bufferable bit of the store that
+  opened the entry;
+- an uncacheable load or store, and an AMO, carry the bufferable bit of the
+  request;
+- the write-back of a dirty cacheline has ``mem_req_bufferable`` set.
+
+The AXI adapters (``hpdcache_mem_to_axi_read`` and ``hpdcache_mem_to_axi_write``)
+set the bufferable bit of AxCACHE from ``mem_req_bufferable``, the allocate bits
+from ``mem_req_cacheable``, and the modifiable bit on every request. Exclusive
+accesses (LR and SC) are non-cacheable and non-bufferable.
+
+.. list-table:: AxCACHE of the memory requests
+   :widths: 22 20 29 29
+   :header-rows: 1
+
+   * - Memory type
+     - Write policy
+     - Read (ARCACHE)
+     - Write (AWCACHE)
+   * - Write-back
+     - Write-back
+     - Refill: ``1111``
+     - Write-back of a dirty cacheline: ``1111``
+   * - Write-back
+     - Write-through
+     - Refill: ``1111``
+     - Write buffer: ``1111``
+   * - Write-through
+     - Write-through
+     - Refill: ``1110``
+     - Write buffer: ``1110``
+   * - Non-cacheable, bufferable
+     - Not applicable
+     - ``0011``
+     - ``0011``
+   * - Non-cacheable, non-bufferable
+     - Not applicable
+     - ``0010``
+     - ``0010``
+
+The write policy of a cacheline is set by the requests that access it, loads
+and prefetches as well as stores (see :ref:`sec_req_wr_policy_hint`): a refill
+installs the cacheline with the policy of the request that missed, and a hit
+with the write-back or write-through hint changes the policy of the cacheline.
+
+A write-through policy is allowed in a write-back memory type: the cacheline is
+written through, and the requests carry the write-back memory type. A
+write-back policy requires a bufferable memory type: the cache holds the
+modified data of the cacheline, which the memory type of a write-through
+region does not allow. Therefore:
+
+.. list-table:: Bufferable bit of the cacheable requests
+   :widths: 30 70
+   :header-rows: 1
+
+   * - Configuration
+     - Cacheable requests
+   * - Write-back only (``wbEn = 1``, ``wtEn = 0``)
+     - The bufferable bit shall be set
+   * - Write-through only (``wbEn = 0``, ``wtEn = 1``)
+     - Any value of the bufferable bit
+   * - Write-back and write-through (``wbEn = 1``, ``wtEn = 1``)
+     - The bufferable bit shall be set when the request has the write-back hint,
+       when it has the auto hint and misses while ``cfg_default_wb_i`` is set,
+       and when it has the auto hint and hits a write-back cacheline
+
+The bufferable bit of a request does not change the write policy of the
+cacheline.
+
+When ``HPDCACHE_ASSERT_OFF`` is not defined, the HPDcache reports an error in
+simulation when a request without the bufferable bit allocates an MSHR in
+write-back, leaves a valid cacheline in write-back, or writes a write-back
+cacheline.
+
+.. admonition:: Caution
+   :class: caution
+
+   For a given address, the bufferable attribute must be consistent between
+   accesses. The granularity is the cacheline. The refills, the writes of the
+   write buffer and the write-back of a cacheline carry the bufferable bit of
+   different requests.
+
 Need response
 ~~~~~~~~~~~~~
 
@@ -967,6 +1104,8 @@ signal is set to 1.
 When ``core_req_i.need_rsp`` is set to 0, the HPDcache processes the request
 but it does not send an acknowledgement to the corresponding requester when the
 transaction is completed.
+
+.. _sec_req_wr_policy_hint:
 
 Write-Policy Hint
 ~~~~~~~~~~~~~~~~~
