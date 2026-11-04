@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Add the missing comma in the port list of the blackbox model of
   hpdcache_sram_wbyteenable_ecc_1rw
+- hwpf: prefetch requests carry the AUTO write-policy hint and the PMA built by
+  the prefetcher
 
 ## [6.1.0] 2026-10-16
 
