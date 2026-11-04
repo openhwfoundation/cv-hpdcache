@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- Add the missing comma in the port list of the blackbox model of
+  hpdcache_sram_wbyteenable_ecc_1rw
+
 ## [6.1.0] 2026-10-16
 
 ### Added

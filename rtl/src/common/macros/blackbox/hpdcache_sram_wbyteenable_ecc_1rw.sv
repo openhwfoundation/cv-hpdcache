@@ -25,7 +25,7 @@
     input  logic [ADDR_SIZE-1:0]              addr,
     input  logic [NDATA-1:0][DATA_SIZE-1:0]   wdata,
     input  logic [NDATA-1:0][DATA_SIZE/8-1:0] wbyteenable,
-    output logic [NDATA-1:0][DATA_SIZE-1:0]   rdata
+    output logic [NDATA-1:0][DATA_SIZE-1:0]   rdata,
 
     input  logic                              err_inj_i,
     input  logic [NDATA-1:0][DATA_SIZE-1:0]   err_inj_msk_i,
