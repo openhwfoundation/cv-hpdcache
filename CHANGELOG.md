@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   (IMPORTANT: requires changes to existing integrations: the requests of a
   cacheable region need the bufferable bit set to stay write-back on AXI, and
   the cache requires it on the requests that hold a cacheline in write-back)
+- AMOs carry the cacheability of their target to the memory interface
 
 ### Removed
 

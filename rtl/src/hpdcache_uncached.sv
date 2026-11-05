@@ -668,7 +668,10 @@ import hpdcache_pkg::*;
         mem_req_write_o.mem_req_len       = 0;
         mem_req_write_o.mem_req_size      = req_size_q;
         mem_req_write_o.mem_req_id        = mem_write_id_i;
-        mem_req_write_o.mem_req_cacheable = 1'b0;
+        //  An AMO keeps the cacheability of its target, so that a cache below can perform
+        //  it (AXI E1.1.10). An exclusive store (SC) is non-cacheable: it must reach the
+        //  exclusive monitor (AXI A7.2.4).
+        mem_req_write_o.mem_req_cacheable = ~req_uc_q & ~req_op_q.is_st & ~req_op_q.is_amo_sc;
         mem_req_write_o.mem_req_bufferable = req_bufferable_q;
         unique case (1'b1)
             req_op_q.is_amo_sc: begin

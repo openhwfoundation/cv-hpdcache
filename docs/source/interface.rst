@@ -1017,6 +1017,9 @@ the memory requests of the access:
   request;
 - the write-back of a dirty cacheline has ``mem_req_bufferable`` set.
 
+An AMO carries the cacheability of its target in ``mem_req_cacheable``, so that
+a cache below the HPDcache can perform it.
+
 The AXI adapters (``hpdcache_mem_to_axi_read`` and ``hpdcache_mem_to_axi_write``)
 set the bufferable bit of AxCACHE from ``mem_req_bufferable``, the allocate bits
 from ``mem_req_cacheable``, and the modifiable bit on every request. Exclusive
