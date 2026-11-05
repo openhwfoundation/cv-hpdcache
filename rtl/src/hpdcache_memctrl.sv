@@ -60,6 +60,7 @@ import hpdcache_pkg::*;
     output hpdcache_tag_t                       dir_hit_tag_o,
     output logic                                dir_hit_wback_o,
     output logic                                dir_hit_dirty_o,
+    output logic                                dir_hit_shared_o,
     output logic                                dir_hit_fetch_o,
 
     input  logic                                dir_updt_i,
@@ -69,6 +70,7 @@ import hpdcache_pkg::*;
     input  logic                                dir_updt_valid_i,
     input  logic                                dir_updt_wback_i,
     input  logic                                dir_updt_dirty_i,
+    input  logic                                dir_updt_shared_i,
     input  logic                                dir_updt_fetch_i,
 
     input  logic                                dir_refill_i,
@@ -82,6 +84,7 @@ import hpdcache_pkg::*;
     output logic                                dir_victim_valid_o,
     output logic                                dir_victim_wback_o,
     output logic                                dir_victim_dirty_o,
+    output logic                                dir_victim_shared_o,
     output hpdcache_tag_t                       dir_victim_tag_o,
     output hpdcache_way_vector_t                dir_victim_way_o,
 
@@ -96,6 +99,7 @@ import hpdcache_pkg::*;
     output logic                                dir_cmo_check_entry_valid_o,
     output logic                                dir_cmo_check_entry_wback_o,
     output logic                                dir_cmo_check_entry_dirty_o,
+    output logic                                dir_cmo_check_entry_shared_o,
     output hpdcache_tag_t                       dir_cmo_check_entry_tag_o,
 
     input  logic                                dir_cmo_updt_i,
@@ -105,6 +109,7 @@ import hpdcache_pkg::*;
     input  logic                                dir_cmo_updt_valid_i,
     input  logic                                dir_cmo_updt_wback_i,
     input  logic                                dir_cmo_updt_dirty_i,
+    input  logic                                dir_cmo_updt_shared_i,
     input  logic                                dir_cmo_updt_fetch_i,
 
     //          Directory Error Correction
@@ -123,6 +128,26 @@ import hpdcache_pkg::*;
     input  logic                                dir_err_write_i,
     input  hpdcache_dir_entry_t                 dir_err_wdata_i,
     //          }}}
+
+    input  logic                                dir_snoop_updt_i,
+    input  hpdcache_set_t                       dir_snoop_updt_set_i,
+    input  hpdcache_way_vector_t                dir_snoop_updt_way_i,
+    input  logic                                dir_snoop_updt_valid_i,
+    input  logic                                dir_snoop_updt_wback_i,
+    input  logic                                dir_snoop_updt_dirty_i,
+    input  logic                                dir_snoop_updt_shared_i,
+    input  logic                                dir_snoop_updt_fetch_i,
+    input  hpdcache_tag_t                       dir_snoop_updt_tag_i,
+
+    input  logic                                dir_uc_updt_i,
+    input  hpdcache_set_t                       dir_uc_updt_set_i,
+    input  hpdcache_way_vector_t                dir_uc_updt_way_i,
+    input  logic                                dir_uc_updt_valid_i,
+    input  logic                                dir_uc_updt_wback_i,
+    input  logic                                dir_uc_updt_dirty_i,
+    input  logic                                dir_uc_updt_shared_i,
+    input  logic                                dir_uc_updt_fetch_i,
+    input  hpdcache_tag_t                       dir_uc_updt_tag_i,
     //      }}}
 
     //      DATA array access interface
@@ -173,7 +198,13 @@ import hpdcache_pkg::*;
     input  logic                                data_err_read_i,
     output hpdcache_access_data_t               data_err_rdata_o,
     input  logic                                data_err_write_i,
-    input  hpdcache_access_data_t               data_err_wdata_i
+    input  hpdcache_access_data_t               data_err_wdata_i,
+
+    input  logic                                data_snoop_read_i,
+    input  hpdcache_set_t                       data_snoop_read_set_i,
+    input  hpdcache_word_t                      data_snoop_read_word_i,
+    input  hpdcache_way_vector_t                data_snoop_read_way_i,
+    output hpdcache_access_data_t               data_snoop_read_data_o
     //      }}}
 );
     //  }}}
@@ -181,7 +212,16 @@ import hpdcache_pkg::*;
     //  Definition of constants and types
     //  {{{
     localparam int unsigned HPDCACHE_DIR_ENTRY_WIDTH = $bits(hpdcache_dir_entry_t);
-    localparam int unsigned HPDCACHE_DIR_RAM_WIDTH = HPDCACHE_DIR_ENTRY_WIDTH;
+    //      When ECC is enabled, the directory RAM data width must be a supported
+    //      SECDED width (29, 32, 48 or 64 bits). Pad the directory entry (which
+    //      carries an extra coherence `shared` bit) to the next valid width.
+    localparam int unsigned HPDCACHE_DIR_RAM_WIDTH =
+            HPDcacheCfg.u.eccEn
+            ? (HPDCACHE_DIR_ENTRY_WIDTH <= 29 ? 29 :
+               HPDCACHE_DIR_ENTRY_WIDTH <= 32 ? 32 :
+               HPDCACHE_DIR_ENTRY_WIDTH <= 48 ? 48 :
+                                                64)
+            : HPDCACHE_DIR_ENTRY_WIDTH;
     localparam int unsigned HPDCACHE_DIR_RAM_ADDR_WIDTH = $clog2(HPDcacheCfg.u.sets);
     localparam int unsigned HPDCACHE_DATA_RAM_ENTR_PER_SET = HPDcacheCfg.u.clWords/
                                                              HPDcacheCfg.u.accessWords;
@@ -306,6 +346,7 @@ import hpdcache_pkg::*;
     logic                [HPDcacheCfg.u.ways-1:0] dir_valid;
     logic                [HPDcacheCfg.u.ways-1:0] dir_wback;
     logic                [HPDcacheCfg.u.ways-1:0] dir_dirty;
+    logic                [HPDcacheCfg.u.ways-1:0] dir_shared;
     logic                [HPDcacheCfg.u.ways-1:0] dir_fetch;
 
     hpdcache_data_addr_t                       data_addr;
@@ -394,6 +435,13 @@ import hpdcache_pkg::*;
         //  Directory
         //
         for (dir_w = 0; dir_w < int'(HPDcacheCfg.u.ways); dir_w++) begin : gen_dir_sram
+            //      Zero-pad the directory entry to the RAM (and SECDED) width on
+            //      write, and truncate it back on read.
+            logic [HPDCACHE_DIR_RAM_WIDTH-1:0] dir_wentry_ram;
+            logic [HPDCACHE_DIR_RAM_WIDTH-1:0] dir_rentry_ram;
+
+            assign dir_wentry_ram = HPDCACHE_DIR_RAM_WIDTH'(dir_wentry[dir_w]);
+
             hpdcache_sram #(
                 .ADDR_SIZE (HPDCACHE_DIR_RAM_ADDR_WIDTH),
                 .DATA_SIZE (HPDCACHE_DIR_RAM_WIDTH),
@@ -405,13 +453,14 @@ import hpdcache_pkg::*;
                 .cs            (dir_cs[dir_w]),
                 .we            (dir_we[dir_w]),
                 .addr          (dir_addr),
-                .wdata         (dir_wentry[dir_w]),
-                .rdata         (dir_rentry[dir_w]),
+                .wdata         (dir_wentry_ram),
+                .rdata         (dir_rentry_ram),
                 .err_inj_i     (1'b0),
                 .err_inj_msk_i ('0),
                 .err_cor_o     (dir_err_cor_o[dir_w]),
                 .err_unc_o     (dir_err_unc_o[dir_w])
             );
+            assign dir_rentry[dir_w] = hpdcache_dir_entry_t'(dir_rentry_ram);
             assign dir_err_valid_o[dir_w] = dir_rentry[dir_w].valid;
             assign dir_err_dirty_o[dir_w] = dir_rentry[dir_w].dirty;
         end
@@ -541,11 +590,48 @@ import hpdcache_pkg::*;
 
                 for (hpdcache_uint i = 0; i < HPDcacheCfg.u.ways; i++) begin
                     dir_wentry[i] = '{
-                        valid: dir_cmo_updt_valid_i,
-                        wback: dir_cmo_updt_wback_i,
-                        dirty: dir_cmo_updt_dirty_i,
-                        fetch: dir_cmo_updt_fetch_i,
-                        tag  : dir_cmo_updt_tag_i
+                        valid : dir_cmo_updt_valid_i,
+                        wback : dir_cmo_updt_wback_i,
+                        dirty : dir_cmo_updt_dirty_i,
+                        shared: dir_cmo_updt_shared_i,
+                        fetch : dir_cmo_updt_fetch_i,
+                        tag   : dir_cmo_updt_tag_i
+                    };
+                end
+            end
+
+            //  Cacheable AMO directory update
+            dir_uc_updt_i: begin
+                dir_addr    = dir_uc_updt_set_i;
+                dir_cs      = dir_uc_updt_way_i;
+                dir_we      = dir_uc_updt_way_i;
+
+                for (hpdcache_uint i = 0; i < HPDcacheCfg.u.ways; i++) begin
+                    dir_wentry[i] = '{
+                        valid : dir_uc_updt_valid_i,
+                        wback : dir_uc_updt_wback_i,
+                        dirty : dir_uc_updt_dirty_i,
+                        shared: dir_uc_updt_shared_i,
+                        fetch : dir_uc_updt_fetch_i,
+                        tag   : dir_uc_updt_tag_i
+                    };
+                end
+            end
+
+            //  Snoop directory update
+            dir_snoop_updt_i: begin
+                dir_addr    = dir_snoop_updt_set_i;
+                dir_cs      = dir_snoop_updt_way_i;
+                dir_we      = dir_snoop_updt_way_i;
+
+                for (hpdcache_uint i = 0; i < HPDcacheCfg.u.ways; i++) begin
+                    dir_wentry[i] = '{
+                        valid : dir_snoop_updt_valid_i,
+                        wback : dir_snoop_updt_wback_i,
+                        dirty : dir_snoop_updt_dirty_i,
+                        shared: dir_snoop_updt_shared_i,
+                        fetch : dir_snoop_updt_fetch_i,
+                        tag   : dir_snoop_updt_tag_i
                     };
                 end
             end
@@ -558,11 +644,12 @@ import hpdcache_pkg::*;
 
                 for (hpdcache_uint i = 0; i < HPDcacheCfg.u.ways; i++) begin
                     dir_wentry[i] = '{
-                        valid: dir_updt_valid_i,
-                        wback: dir_updt_wback_i,
-                        dirty: dir_updt_dirty_i,
-                        fetch: dir_updt_fetch_i,
-                        tag  : dir_updt_tag_i
+                        valid:  dir_updt_valid_i,
+                        wback:  dir_updt_wback_i,
+                        dirty:  dir_updt_dirty_i,
+                        shared: dir_updt_shared_i,
+                        fetch:  dir_updt_fetch_i,
+                        tag  :  dir_updt_tag_i
                     };
                 end
             end
@@ -652,13 +739,15 @@ import hpdcache_pkg::*;
         .data_o      (dir_hit_tag_o)
     );
 
-    assign dir_hit_wback_o = |(dir_hit_way_o & dir_wback);
-    assign dir_hit_dirty_o = |(dir_hit_way_o & dir_dirty);
-    assign dir_hit_fetch_o = |(dir_hit_way_o & dir_fetch);
+    assign dir_hit_wback_o  = |(dir_hit_way_o & dir_wback);
+    assign dir_hit_dirty_o  = |(dir_hit_way_o & dir_dirty);
+    assign dir_hit_shared_o = |(dir_hit_way_o & dir_shared);
+    assign dir_hit_fetch_o  = |(dir_hit_way_o & dir_fetch);
 
     assign dir_cmo_check_entry_valid_o = |(dir_req_way_q & dir_valid);
     assign dir_cmo_check_entry_wback_o = |(dir_req_way_q & dir_wback);
     assign dir_cmo_check_entry_dirty_o = |(dir_req_way_q & dir_dirty);
+    assign dir_cmo_check_entry_shared_o = |(dir_req_way_q & dir_shared);
     hpdcache_mux #(
         .NINPUT      (HPDcacheCfg.u.ways),
         .DATA_WIDTH  (HPDcacheCfg.tagWidth),
@@ -669,9 +758,10 @@ import hpdcache_pkg::*;
         .data_o      (dir_cmo_check_entry_tag_o)
     );
 
-    assign dir_victim_valid_o = |(dir_victim_way_o & dir_valid);
-    assign dir_victim_wback_o = |(dir_victim_way_o & dir_wback);
-    assign dir_victim_dirty_o = |(dir_victim_way_o & dir_dirty);
+    assign dir_victim_valid_o  = |(dir_victim_way_o & dir_valid);
+    assign dir_victim_wback_o  = |(dir_victim_way_o & dir_wback);
+    assign dir_victim_dirty_o  = |(dir_victim_way_o & dir_dirty);
+    assign dir_victim_shared_o = |(dir_victim_way_o & dir_shared);
     hpdcache_mux #(
         .NINPUT      (HPDcacheCfg.u.ways),
         .DATA_WIDTH  (HPDcacheCfg.tagWidth),
@@ -701,10 +791,11 @@ import hpdcache_pkg::*;
                                  dir_req_set_q;
 
     for (gen_i = 0; gen_i < HPDcacheCfg.u.ways; gen_i++) begin : gen_dir_valid_bv
-        assign dir_valid[gen_i] = dir_rentry[gen_i].valid;
-        assign dir_wback[gen_i] = dir_rentry[gen_i].wback;
-        assign dir_dirty[gen_i] = dir_rentry[gen_i].dirty;
-        assign dir_fetch[gen_i] = dir_rentry[gen_i].fetch;
+        assign dir_valid[gen_i]  = dir_rentry[gen_i].valid;
+        assign dir_wback[gen_i]  = dir_rentry[gen_i].wback;
+        assign dir_dirty[gen_i]  = dir_rentry[gen_i].dirty;
+        assign dir_shared[gen_i] = dir_rentry[gen_i].shared;
+        assign dir_fetch[gen_i]  = dir_rentry[gen_i].fetch;
     end
 
 
@@ -724,6 +815,7 @@ import hpdcache_pkg::*;
         .sel_dir_valid_i          (dir_valid),
         .sel_dir_wback_i          (dir_wback),
         .sel_dir_dirty_i          (dir_dirty),
+        .sel_dir_shared_i         (dir_shared),
         .sel_dir_fetch_i          (dir_fetch),
         .sel_victim_set_i         (dir_victim_set_i),
         .sel_victim_way_o         (dir_victim_way_o)
@@ -872,6 +964,13 @@ import hpdcache_pkg::*;
                 data_read_word    = data_err_word_i;
             end
 
+            data_snoop_read_i: begin
+                data_read         = 1'b1;
+                data_read_set     = data_snoop_read_set_i;
+                data_read_size    = hpdcache_req_size_t'($clog2(HPDcacheCfg.accessWidth/8));
+                data_read_word    = data_snoop_read_word_i;
+            end
+
             default: begin
                 data_read         = 1'b0;
                 data_read_set     = '0;
@@ -884,6 +983,7 @@ import hpdcache_pkg::*;
     //  Multiplex between read and write access on the data RAM
     assign data_way = data_refill_i     ? data_refill_way_i :
                       data_flush_read_i ? data_flush_read_way_i :
+                      data_snoop_read_i ? data_snoop_read_way_i :
                       data_amo_write_i  ? data_amo_write_way_i :
                       data_req_write_i  ? data_req_write_way_i :
                       data_err_read_i   ? data_err_way_i :
@@ -1028,7 +1128,7 @@ import hpdcache_pkg::*;
     end
     //  }}}
 
-    //  Select flush data (or data for the error correction handler)
+    //  Select flush, snoop or error-correction data
     //  {{{
     hpdcache_data_ram_data_t
         [HPDcacheCfg.u.accessWords-1:0]
@@ -1041,16 +1141,20 @@ import hpdcache_pkg::*;
 
     hpdcache_data_ram_row_idx_t                  data_flush_row_index_q;
     logic                                        data_flush_read_q;
+    logic                                        data_snoop_read_q;
     logic [HPDcacheCfg.u.dataWaysPerRamWord-1:0] data_flush_read_way;
 
     always_ff @(posedge clk_i or negedge rst_ni)
     begin : data_flush_row_index_ff
         if (!rst_ni) begin
             data_flush_row_index_q <= '0;
+            data_snoop_read_q      <= '0;
         end else begin
-            if (data_flush_read_i || (HPDcacheCfg.u.eccEn && data_err_read_i)) begin
+            if (data_flush_read_i || data_snoop_read_i ||
+                    (HPDcacheCfg.u.eccEn && data_err_read_i)) begin
                 data_flush_row_index_q <= data_ram_row;
             end
+            data_snoop_read_q <= data_snoop_read_i;
         end
     end
 
@@ -1065,8 +1169,8 @@ import hpdcache_pkg::*;
     end else begin : gen_data_flush_read_tieoff
         assign data_flush_read_q = '0;
     end
-        
-        
+
+
 
     hpdcache_mux #(
         .NINPUT      (HPDcacheCfg.u.ways/HPDcacheCfg.u.dataWaysPerRamWord),
@@ -1091,7 +1195,9 @@ import hpdcache_pkg::*;
         data_flush_read_way = '0;
         for (int i = 0; i < HPDcacheCfg.u.dataWaysPerRamWord; i++) begin
             for (int j = 0; j < HPDcacheCfg.u.ways; j += HPDcacheCfg.u.dataWaysPerRamWord) begin
-                if (!HPDcacheCfg.u.eccEn || data_flush_read_q) begin
+                if (data_snoop_read_q) begin
+                    data_flush_read_way[i] |= data_snoop_read_way_i[i + j];
+                end else if (!HPDcacheCfg.u.eccEn || data_flush_read_q) begin
                     data_flush_read_way[i] |= data_flush_read_way_i[i + j];
                 end else begin
                     data_flush_read_way[i] |= data_err_way_i[i + j];
@@ -1115,6 +1221,7 @@ import hpdcache_pkg::*;
     end else begin : gen_err_rdata_noecc
         assign data_err_rdata_o = '0;
     end
+    assign data_snoop_read_data_o = data_flush_read_data_o;
     //  }}}
 
     //  Assertions
@@ -1136,6 +1243,8 @@ import hpdcache_pkg::*;
                       dir_cmo_check_entry_i,
                       dir_cmo_updt_i,
                       dir_updt_i,
+                      dir_snoop_updt_i,
+                      dir_uc_updt_i,
                       dir_err_read_i,
                       dir_err_write_i})) else
             $error("hpdcache_memctrl: more than one process is accessing the cache directory");
@@ -1146,7 +1255,8 @@ import hpdcache_pkg::*;
                       data_refill_i,
                       data_flush_read_i,
                       data_err_read_i,
-                      data_err_write_i})) else
+                      data_err_write_i,
+                      data_snoop_read_i})) else
             $error("hpdcache_memctrl: more than one process is accessing the cache data");
 `endif
     //  }}}

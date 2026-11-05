@@ -72,6 +72,8 @@ import hpdcache_pkg::*;
     output logic                  flush_alloc_ready_o,
     input  hpdcache_nline_t       flush_alloc_nline_i,
     input  hpdcache_way_vector_t  flush_alloc_way_i,
+    input  logic                  flush_alloc_evict_i,
+    input  logic                  flush_alloc_nodata_i,
     //      }}}
 
     //      CACHE DATA interface
@@ -196,14 +198,19 @@ import hpdcache_pkg::*;
             FLUSH_IDLE: begin
                 flush_mem_req_w = flush_resizer_wok & ~flush_full_o & flush_alloc_i;
                 if (flush_alloc_i && flush_alloc_ready_o) begin
-                    flush_data_read_o = 1'b1;
-                    flush_data_read_set_o = flush_alloc_set;
-                    flush_data_read_way_o = flush_alloc_way_i;
-                    flush_data_read_word_o = 0;
-
                     flush_alloc = 1'b1;
-                    flush_word_d = flush_word_q + hpdcache_word_t'(HPDcacheCfg.u.accessWords);
-                    flush_fsm_d = FLUSH_SEND;
+
+                    //  An Evict carries no data, so no cacheline is read out
+                    if (!flush_alloc_nodata_i) begin
+                        flush_data_read_o = 1'b1;
+                        flush_data_read_set_o = flush_alloc_set;
+                        flush_data_read_way_o = flush_alloc_way_i;
+                        flush_data_read_word_o = 0;
+
+                        flush_word_d = flush_word_q +
+                                       hpdcache_word_t'(HPDcacheCfg.u.accessWords);
+                        flush_fsm_d = FLUSH_SEND;
+                    end
                 end
             end
             FLUSH_SEND: begin
@@ -322,7 +329,12 @@ import hpdcache_pkg::*;
         mem_req_id: hpdcache_mem_id_t'(flush_dir_free_ptr),
         mem_req_command: HPDCACHE_MEM_WRITE,
         mem_req_atomic: HPDCACHE_MEM_ATOMIC_ADD, /* NOP */
-        mem_req_cacheable: 1'b1
+        mem_req_cacheable: 1'b1,
+        //  A flush that keeps the line must not de-allocate it in a snoop filter,
+        //  and a clean victim is dropped with an address-only Evict
+        mem_req_coherence: !flush_alloc_evict_i ? HPDCACHE_MEM_COHERENCE_WRITE_CLEAN :
+                            flush_alloc_nodata_i ? HPDCACHE_MEM_COHERENCE_EVICT
+                                                 : HPDCACHE_MEM_COHERENCE_WRITE_BACK
     };
     hpdcache_fifo_reg #(
         .FIFO_DEPTH     (2),

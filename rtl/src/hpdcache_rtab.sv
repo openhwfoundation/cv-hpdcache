@@ -38,7 +38,7 @@ import hpdcache_pkg::*;
     //  Global control signals
     output logic                  empty_o,  // RTAB is empty
     output logic                  full_o,   // RTAB is full
-    output logic                  fence_o,  // There is a pending instruction with fence in the RTAB
+    output logic                  fence_o,  // Pending instruction with fence in the RTAB
 
     //  Check RTAB signals
     //     This interface allows to check if there is an address-overlapping
@@ -421,10 +421,10 @@ import hpdcache_pkg::*;
             //  Update refill dependencies
             //  {{{
             if (refill_i) begin
-                deps_rst[i].mshr_full = waiters_mshr_full_gnt[i];
+                deps_rst[i].mshr_full = match_refill_mshr_set[i];
                 deps_rst[i].mshr_hit = match_refill_nline[i];
                 deps_rst[i].write_miss = match_refill_nline[i];
-                deps_rst[i].dir_unavailable = waiters_dir_unavailable_gnt[i];
+                deps_rst[i].dir_unavailable = match_refill_set[i];
                 deps_rst[i].dir_fetch = match_refill_set[i] & match_refill_way[i];
             end
             //  }}}
@@ -603,8 +603,9 @@ import hpdcache_pkg::*;
     //  then set the error bit of the pending request to abort it when replayed
     for (gen_i = 0; gen_i < N; gen_i++) begin : gen_error_set
         assign error_set[gen_i] = valid_q[gen_i] &
-                                  deps_q[gen_i].write_miss &
-                                  match_refill_nline[gen_i] &
+                                  (deps_q[gen_i].write_miss  |
+                                   deps_q[gen_i].pend_trans) &
+                                  match_refill_nline[gen_i]  &
                                   refill_is_error;
     end
     assign error_rst = pop_commit_valid_rst;
