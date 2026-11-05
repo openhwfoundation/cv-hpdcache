@@ -44,6 +44,7 @@ public:
         seg.set_base(0x00000000ULL);
         seg.set_length(0x00080000ULL);
         seg.set_uncached(false);
+        seg.set_bufferable(true);
 
         hpdcache_test_sequence::segptr->keep_only(0);
         hpdcache_test_sequence::delay->keep_only(0);
@@ -122,6 +123,7 @@ private:
         t->req_be = ((1UL << bytes) - 1) << offset;
         t->req_size = sz;
         t->req_uncacheable = seg.is_uncached() ? 1 : 0;
+        t->req_bufferable = seg.is_bufferable();
         t->req_need_rsp = true;
 
         return t;

@@ -77,6 +77,7 @@ private:
         if (t->is_wr_policy_wt()) ret |= (0x1 << 2);
         if (t->req_io) ret |= (0x1 << 3);
         if (t->req_uncacheable) ret |= (0x1 << 4);
+        if (t->req_bufferable) ret |= (0x1 << 5);
         return ret;
     }
 

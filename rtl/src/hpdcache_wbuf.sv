@@ -74,6 +74,7 @@ import hpdcache_pkg::*;
     input  wbuf_data_t            write_data_i,
     input  wbuf_be_t              write_be_i,  // byte-enable
     input  logic                  write_uc_i,  // uncacheable write
+    input  logic                  write_bufferable_i,  // bufferable write
 
     //  Read hit interface
     input  wbuf_addr_t            read_addr_i,
@@ -136,6 +137,7 @@ import hpdcache_pkg::*;
         wbuf_timecnt_t  cnt;
         wbuf_tag_t      tag;
         logic           uc;
+        logic           bufferable;
     } wbuf_dir_entry_t;
 
     typedef struct packed {
@@ -152,6 +154,7 @@ import hpdcache_pkg::*;
         wbuf_tag_t      meta_tag;
         wbuf_dir_ptr_t  meta_id;
         logic           meta_uc;
+        logic           meta_bufferable;
     } wbuf_send_meta_t;
 
     function automatic void wbuf_data_write(
@@ -479,6 +482,7 @@ import hpdcache_pkg::*;
                         wbuf_dir_d[i].cnt = 0;
                         wbuf_dir_d[i].ptr = wbuf_data_free_ptr;
                         wbuf_dir_d[i].uc  = write_uc_i;
+                        wbuf_dir_d[i].bufferable = write_bufferable_i;
 
                         wbuf_data_w_init = 1'b1;
                         wbuf_data_w = 1'b1;
@@ -583,6 +587,7 @@ import hpdcache_pkg::*;
         assign wbuf_meta_pend[i].meta_tag = wbuf_dir_q[i].tag;
         assign wbuf_meta_pend[i].meta_id = i;
         assign wbuf_meta_pend[i].meta_uc = wbuf_dir_q[i].uc;
+        assign wbuf_meta_pend[i].meta_bufferable = wbuf_dir_q[i].bufferable;
         assign wbuf_meta_pend_data_ptr[i] = wbuf_dir_q[i].ptr;
     end
 
@@ -668,6 +673,7 @@ import hpdcache_pkg::*;
     assign mem_req_write_o.mem_req_command = HPDCACHE_MEM_WRITE;
     assign mem_req_write_o.mem_req_atomic = HPDCACHE_MEM_ATOMIC_ADD;
     assign mem_req_write_o.mem_req_cacheable = ~wbuf_meta_send_q.meta_uc;
+    assign mem_req_write_o.mem_req_bufferable = wbuf_meta_send_q.meta_bufferable;
 
     assign mem_req_write_data_o.mem_req_w_last = 1'b1;
 

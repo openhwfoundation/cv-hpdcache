@@ -101,6 +101,7 @@ import hpdcache_pkg::*;
     input  logic                  mshr_alloc_is_prefetch_i,
     input  logic                  mshr_alloc_wback_i,
     input  logic                  mshr_alloc_dirty_i,
+    input  logic                  mshr_alloc_bufferable_i,
     input  hpdcache_req_data_t    mshr_alloc_wdata_i,
     input  hpdcache_req_be_t      mshr_alloc_be_i,
 
@@ -181,6 +182,7 @@ import hpdcache_pkg::*;
     miss_req_fsm_e           miss_req_fsm_q, miss_req_fsm_d;
     mshr_way_t               mshr_alloc_way_q, mshr_alloc_way_d;
     hpdcache_nline_t         mshr_alloc_nline_q;
+    logic                    mshr_alloc_bufferable_q;
 
     refill_fsm_e             refill_fsm_q, refill_fsm_d;
     hpdcache_set_t           refill_set_q;
@@ -286,6 +288,7 @@ import hpdcache_pkg::*;
     assign mem_req_o.mem_req_command = HPDCACHE_MEM_READ;
     assign mem_req_o.mem_req_atomic = HPDCACHE_MEM_ATOMIC_ADD;
     assign mem_req_o.mem_req_cacheable = 1'b1;
+    assign mem_req_o.mem_req_bufferable = mshr_alloc_bufferable_q;
 
     if ((HPDcacheCfg.u.mshrSets > 1) && (HPDcacheCfg.u.mshrWays > 1))
     begin : gen_mem_id_mshr_sets_and_ways_gt_1
@@ -305,10 +308,12 @@ import hpdcache_pkg::*;
         if (!rst_ni) begin
             mshr_alloc_way_q <= '0;
             mshr_alloc_nline_q <= '0;
+            mshr_alloc_bufferable_q <= 1'b0;
         end else begin
             if (mshr_alloc) begin
                 mshr_alloc_way_q <= mshr_alloc_way_d;
                 mshr_alloc_nline_q <= mshr_alloc_nline_i;
+                mshr_alloc_bufferable_q <= mshr_alloc_bufferable_i;
             end
         end
     end

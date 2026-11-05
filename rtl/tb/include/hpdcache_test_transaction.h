@@ -92,6 +92,7 @@ public:
     bool req_need_rsp;
     bool req_phys_indexed;
     bool req_uncacheable;
+    bool req_bufferable;
     bool req_io;
     hpdcache_wr_policy_hint_e req_wr_policy_hint;
     bool req_abort;
@@ -109,6 +110,7 @@ public:
         req_need_rsp = false;
         req_phys_indexed = false;
         req_uncacheable = false;
+        req_bufferable = false;
         req_io = false;
         req_wr_policy_hint = HPDCACHE_WR_POLICY_AUTO;
         req_abort = false;
@@ -121,6 +123,8 @@ public:
     bool is_phys_indexed() const { return req_phys_indexed; }
 
     bool is_uncacheable() const { return req_uncacheable; }
+
+    bool is_bufferable() const { return req_bufferable; }
 
     bool is_io() const { return req_io; }
 
@@ -301,6 +305,7 @@ public:
 
         if (!is_cmo()) {
             os << (req_uncacheable ? " / UNCACHED" : " / CACHED")
+               << (req_bufferable ? " / BUFFERABLE" : " / NON-BUFFERABLE")
                << " / SIZE = " << req_size.to_string(SC_HEX)
                << (req_need_rsp ? " / NEED_RSP" : " / NO NEED_RSP")
                << (req_phys_indexed ? " / PHYS_INDEXED" : " / VIRT_INDEXED");

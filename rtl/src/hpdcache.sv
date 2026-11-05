@@ -224,6 +224,7 @@ import hpdcache_pkg::*;
     logic                  miss_mshr_alloc_is_prefetch;
     logic                  miss_mshr_alloc_wback;
     logic                  miss_mshr_alloc_dirty;
+    logic                  miss_mshr_alloc_bufferable;
 
     logic                  wbuf_flush_all;
     logic                  wbuf_write;
@@ -232,6 +233,7 @@ import hpdcache_pkg::*;
     wbuf_data_t            wbuf_write_data;
     wbuf_be_t              wbuf_write_be;
     logic                  wbuf_write_uncacheable;
+    logic                  wbuf_write_bufferable;
     logic                  wbuf_read_hit;
     logic                  wbuf_read_flush_hit;
     hpdcache_req_addr_t    wbuf_rtab_addr;
@@ -249,6 +251,7 @@ import hpdcache_pkg::*;
     hpdcache_req_data_t    uc_req_data;
     hpdcache_req_be_t      uc_req_be;
     logic                  uc_req_uncacheable;
+    logic                  uc_req_bufferable;
     hpdcache_req_sid_t     uc_req_sid;
     hpdcache_req_tid_t     uc_req_tid;
     logic                  uc_req_need_rsp;
@@ -503,6 +506,7 @@ import hpdcache_pkg::*;
         .st2_mshr_alloc_is_prefetch_o       (miss_mshr_alloc_is_prefetch),
         .st2_mshr_alloc_wback_o             (miss_mshr_alloc_wback),
         .st2_mshr_alloc_dirty_o             (miss_mshr_alloc_dirty),
+        .st2_mshr_alloc_bufferable_o        (miss_mshr_alloc_bufferable),
 
         .refill_req_valid_i                 (refill_req_valid),
         .refill_req_ready_o                 (refill_req_ready),
@@ -549,6 +553,7 @@ import hpdcache_pkg::*;
         .wbuf_write_data_o                  (wbuf_write_data),
         .wbuf_write_be_o                    (wbuf_write_be),
         .wbuf_write_uncacheable_o           (wbuf_write_uncacheable),
+        .wbuf_write_bufferable_o            (wbuf_write_bufferable),
         .wbuf_read_hit_i                    (wbuf_read_hit),
         .wbuf_read_flush_hit_o              (wbuf_read_flush_hit),
         .wbuf_rtab_addr_o                   (wbuf_rtab_addr),
@@ -569,6 +574,7 @@ import hpdcache_pkg::*;
         .uc_req_data_o                      (uc_req_data),
         .uc_req_be_o                        (uc_req_be),
         .uc_req_uc_o                        (uc_req_uncacheable),
+        .uc_req_bufferable_o                (uc_req_bufferable),
         .uc_req_sid_o                       (uc_req_sid),
         .uc_req_tid_o                       (uc_req_tid),
         .uc_req_need_rsp_o                  (uc_req_need_rsp),
@@ -683,6 +689,7 @@ import hpdcache_pkg::*;
             .write_data_i                       (wbuf_write_data),
             .write_be_i                         (wbuf_write_be),
             .write_uc_i                         (wbuf_write_uncacheable),
+            .write_bufferable_i                 (wbuf_write_bufferable),
 
             .read_addr_i                        (wbuf_write_addr),
             .read_hit_o                         (wbuf_read_hit),
@@ -778,6 +785,7 @@ import hpdcache_pkg::*;
         .mshr_alloc_is_prefetch_i           (miss_mshr_alloc_is_prefetch),
         .mshr_alloc_wback_i                 (miss_mshr_alloc_wback),
         .mshr_alloc_dirty_i                 (miss_mshr_alloc_dirty),
+        .mshr_alloc_bufferable_i            (miss_mshr_alloc_bufferable),
         .mshr_alloc_wdata_i                 (miss_mshr_alloc_wdata),
         .mshr_alloc_be_i                    (miss_mshr_alloc_be),
 
@@ -850,6 +858,7 @@ import hpdcache_pkg::*;
         .req_data_i                    (uc_req_data),
         .req_be_i                      (uc_req_be),
         .req_uc_i                      (uc_req_uncacheable),
+        .req_bufferable_i              (uc_req_bufferable),
         .req_sid_i                     (uc_req_sid),
         .req_tid_i                     (uc_req_tid),
         .req_need_rsp_i                (uc_req_need_rsp),

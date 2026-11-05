@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Add a bufferable attribute to the request PMA and to the memory requests,
+  and build AxCACHE from the cacheable and bufferable attributes
+  (IMPORTANT: requires changes to existing integrations: the requests of a
+  cacheable region need the bufferable bit set to stay write-back on AXI, and
+  the cache requires it on the requests that hold a cacheline in write-back)
+- AMOs carry the cacheability of their target to the memory interface
+
 ### Removed
 
 - Remove unused dataRamByteEnable parameter
@@ -19,6 +26,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Add the missing comma in the port list of the blackbox model of
   hpdcache_sram_wbyteenable_ecc_1rw
+- hwpf: prefetch requests carry the AUTO write-policy hint and the PMA built by
+  the prefetcher
 
 ## [6.1.0] 2026-10-16
 

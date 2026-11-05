@@ -252,7 +252,7 @@ import hpdcache_pkg::*;
                hwpf_stride_arb_in_req[i].need_rsp     = hwpf_stride_req[i].need_rsp,
                hwpf_stride_arb_in_req[i].phys_indexed = hwpf_stride_req[i].phys_indexed,
                hwpf_stride_arb_in_req[i].addr_tag     = '0,
-               hwpf_stride_arb_in_req[i].pma          = '0;
+               hwpf_stride_arb_in_req[i].pma          = hwpf_stride_req[i].pma;
     end
     //  }}}
 
