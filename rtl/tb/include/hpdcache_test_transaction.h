@@ -494,9 +494,9 @@ public:
     {
         std::stringstream os;
 
-        os << "MEM_READ_REQ / @ = " << std::hex << addr << std::dec
-           << " / CMD = " << command_to_string(command) << " / LEN = " << std::hex << len
-           << std::dec << " / SIZE = " << std::hex << size << std::dec << " / ID = 0x" << std::hex
+        os << "MEM_READ_REQ / @ = 0x" << std::hex << addr << std::dec
+           << " / CMD = " << command_to_string(command) << " / LEN = 0x" << std::hex << len
+           << std::dec << " / SIZE = 0x" << std::hex << size << std::dec << " / ID = 0x" << std::hex
            << id << std::dec << (cacheable ? " / CACHEABLE" : " / UNCACHEABLE");
         return os.str();
     }
@@ -528,14 +528,14 @@ public:
     {
         std::stringstream os;
 
-        os << "MEM_WRITE_REQ / @ = " << std::hex << addr << std::dec
+        os << "MEM_WRITE_REQ / @ = 0x" << std::hex << addr << std::dec
            << " / COMMAND = " << command_to_string(command);
 
         if (command == HPDCACHE_MEM_ATOMIC) {
             os << " / ATOMIC = " << atomic_to_string(atomic);
         }
 
-        os << " / LEN = " << std::hex << len << std::dec << " / SIZE = " << std::hex << size
+        os << " / LEN = 0x" << std::hex << len << std::dec << " / SIZE = 0x" << std::hex << size
            << std::dec << " / ID = 0x" << std::hex << id << std::dec
            << " / DATA = " << data.to_string(SC_HEX) << " / BE = " << be.to_string(SC_HEX)
            << (last ? " / LAST" : " ") << (cacheable ? " / CACHEABLE" : " / UNCACHEABLE");
