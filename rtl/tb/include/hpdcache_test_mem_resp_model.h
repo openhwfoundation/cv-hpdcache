@@ -286,7 +286,7 @@ private:
 
                 st_data =
                     is_amo ? amo_result : req.data.range((i + 1) * 64 - 1, i * 64).to_uint64();
-                memory_m->writeMemory(word_addr + w, st_data, mem_model::beToMask(be));
+                memory_m->writeMemory(word_addr + w, st_data, be);
 
 #if DEBUG_HPDCACHE_TEST_MEM_RESP_MODEL
                 if (check_verbosity(sc_core::SC_DEBUG)) {
