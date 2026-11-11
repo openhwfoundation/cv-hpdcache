@@ -29,7 +29,6 @@
 #include "hpdcache_test_defs.h"
 #include "hpdcache_test_mem_resp_model_base.h"
 #include "hpdcache_test_transaction.h"
-#include "scv.h"
 #include "sequence.h"
 #include <systemc>
 
@@ -42,20 +41,6 @@ public:
       : Sequence(nm)
       , name(seq_name)
       , max_transactions(100)
-      , segptr("segptr")
-      , seg_distribution("seg_distribution")
-      , delay("delay")
-      , delay_distribution("delay_distribution")
-      , amo_size("amo_size")
-      , amo_size_distribution("amo_size_distribution")
-      , amo_sc_do("amo_sc_do")
-      , amo_sc_do_distribution("amo_sc_do_distribution")
-      , op("op")
-      , op_distribution("op_distribution")
-      , op_amo("op_amo")
-      , op_amo_distribution("op_amo_distribution")
-      , wr_policy("wr_policy")
-      , wr_policy_distribution("wr_policy_distribution")
     {
         std::cout << "Building " << nm << std::endl;
     }
@@ -203,20 +188,6 @@ protected:
     std::list<unsigned int> ids;
     std::string name;
     size_t max_transactions;
-    scv_smart_ptr<int> segptr;
-    scv_bag<int> seg_distribution;
-    scv_smart_ptr<int> delay;
-    scv_bag<pair<int, int>> delay_distribution;
-    scv_smart_ptr<int> amo_size;
-    scv_bag<int> amo_size_distribution;
-    scv_smart_ptr<bool> amo_sc_do;
-    scv_bag<bool> amo_sc_do_distribution;
-    scv_smart_ptr<int> op;
-    scv_bag<int> op_distribution;
-    scv_smart_ptr<int> op_amo;
-    scv_bag<int> op_amo_distribution;
-    scv_smart_ptr<int> wr_policy;
-    scv_bag<int> wr_policy_distribution;
 
     std::shared_ptr<hpdcache_test_mem_resp_model_base> mem_resp_model;
 };
