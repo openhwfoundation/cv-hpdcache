@@ -252,7 +252,8 @@ import hpdcache_pkg::*;
 
     //  Definition of types and constants
     //  {{{
-    typedef logic [$clog2(HPDcacheCfg.u.rtabEntries)-1:0] rtab_ptr_t;
+    typedef logic [(HPDcacheCfg.u.rtabEntries > 1 ?
+                    $clog2(HPDcacheCfg.u.rtabEntries) : 1)-1:0] rtab_ptr_t;
     typedef logic [$clog2(HPDcacheCfg.u.rtabEntries):0]   rtab_cnt_t;
 
     //    Extended request type
