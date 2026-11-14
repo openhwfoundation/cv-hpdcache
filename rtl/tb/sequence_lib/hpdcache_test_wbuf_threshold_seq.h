@@ -5,6 +5,7 @@
 #define __HPDCACHE_TEST_WBUF_THRESHOLD_SEQ_H__
 
 #include "hpdcache_test_sequence.h"
+#include "hpdcache_test_range_distribution.h"
 
 class hpdcache_test_wbuf_threshold_seq : public hpdcache_test_sequence
 {
@@ -89,8 +90,8 @@ private:
     void run()
     {
         while (rst_ni == 0) wait();
-        scv_bag<std::pair<int, int>> no_delay;
-        no_delay.push(std::pair<int, int>(0, 0), 1);
+        hpdcache_test_range_distribution<int> no_delay;
+        no_delay.add_value_weight(0, 0, 1);
         auto mem = get_mem_resp_model();
         mem->set_wa_ready_delay_distribution(no_delay);
         mem->set_wd_ready_delay_distribution(no_delay);

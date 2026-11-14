@@ -147,11 +147,11 @@ private:
     hpdcache_test_enum_distribution<op_e> op_dist;
 
     hpdcache_test_sequence::hpdcache_test_memory_segment seg[4];
-    uniform_int_distribution<uint32_t> data_dist;
-    uniform_int_distribution<int> size_dist;
+    std::uniform_int_distribution<uint32_t> data_dist;
+    std::uniform_int_distribution<int> size_dist;
 
     std::bernoulli_distribution fault_inj_dist;
-    uniform_int_distribution<int> fault_inj_way_dist;
+    std::uniform_int_distribution<int> fault_inj_way_dist;
     hpdcache_test_enum_distribution<fault_domain_e> fault_inj_domain_dist;
     std::bernoulli_distribution fault_inj_double_dist;
 
@@ -306,8 +306,8 @@ private:
 
         wait();
 
-        uniform_int_distribution<uint64_t> addr;
-        uniform_int_distribution<int> lrsc_inbetween_instrs_dist(0, 10);
+        std::uniform_int_distribution<uint64_t> addr;
+        std::uniform_int_distribution<int> lrsc_inbetween_instrs_dist(0, 10);
 
         for (size_t n = 0; n < this->max_transactions; n++) {
             std::shared_ptr<hpdcache_test_transaction_req> t;

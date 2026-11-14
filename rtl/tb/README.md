@@ -18,7 +18,6 @@ This testbench requires the following tools and libraries pre-installed:
 
 - [Verilator](https://verilator.org/guide/latest/install.html) - Version 5.018 or newer
 - [SystemC Library](https://www.accellera.org/downloads/standards/systemc) - Version 2.3.4 or newer
-- [SystemC Verification Library (SCV)](https://www.accellera.org/downloads/standards/systemc) - Version 2.0.1 or newer
 - Perl - Version 5
 
 Please follow the corresponding installation instructions for those packages to

@@ -14,6 +14,7 @@
 
 #include <utility>
 #include <random>
+#include <vector>
 
 template <typename enum_type, class rand_gen = std::default_random_engine>
 class hpdcache_test_enum_distribution

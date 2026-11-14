@@ -29,7 +29,8 @@
 #include "hpdcache_test_defs.h"
 #include "hpdcache_test_mem_resp_model_base.h"
 #include "hpdcache_test_sequence.h"
-#include "scv.h"
+#include "hpdcache_test_range_distribution.h"
+#include <random>
 #include <systemc>
 
 class hpdcache_test_write_seq : public hpdcache_test_sequence
@@ -45,36 +46,32 @@ public:
         seg.set_length(0x00004000ULL);
         seg.set_uncached(false);
 
-        hpdcache_test_sequence::segptr->keep_only(0);
-        hpdcache_test_sequence::delay->keep_only(0);
-        hpdcache_test_sequence::op->keep_only(hpdcache_test_transaction_req::HPDCACHE_REQ_STORE);
     }
 
 private:
-    typedef sc_bv<HPDCACHE_REQ_DATA_WIDTH> req_data_t;
-
     hpdcache_test_sequence::hpdcache_test_memory_segment seg;
-    scv_smart_ptr<req_data_t> data;
-    scv_smart_ptr<req_data_t> size;
+    std::default_random_engine rg;
+    std::uniform_int_distribution<uint32_t> data_dist;
+    std::uniform_int_distribution<uint32_t> size_dist{0, 3};
+    std::uniform_int_distribution<uint64_t> addr_dist;
     const unsigned int HPDCACHE_REQ_DATA_BYTES = HPDCACHE_REQ_DATA_WIDTH / 8;
 
 #if SC_VERSION_MAJOR < 3
     SC_HAS_PROCESS(hpdcache_test_write_seq);
 #endif
 
-    inline req_data_t create_random_data()
+    inline sc_bv<HPDCACHE_REQ_DATA_WIDTH> create_random_data()
     {
-        data->next();
-        return data->read();
+        sc_uint<HPDCACHE_REQ_DATA_WIDTH> ret;
+        for (int i = 0; i < HPDCACHE_REQ_DATA_WIDTH / 32; i++) {
+            ret.range((i + 1) * 32 - 1, i * 32) = data_dist(rg);
+        }
+        return sc_bv<HPDCACHE_REQ_DATA_WIDTH>(ret);
     }
 
     inline uint32_t create_random_size(bool is_amo)
     {
-        if (!is_amo) size->keep_only(0, 3);
-        else size->keep_only(2, 3);
-
-        size->next();
-        return size->read().to_uint();
+        return is_amo ? std::uniform_int_distribution<uint32_t>(2, 3)(rg) : size_dist(rg);
     }
 
     void send_transaction(std::shared_ptr<hpdcache_test_transaction_req> t)
@@ -89,27 +86,16 @@ private:
         release_transaction<hpdcache_test_transaction_req>(t);
 
         // add some random delay between two consecutive commands
-        for (int i = 0; i < delay->read(); i++) {
-            wait();
-        }
     }
 
     std::shared_ptr<hpdcache_test_transaction_req> create_random_transaction()
     {
         std::shared_ptr<hpdcache_test_transaction_req> t;
 
-        scv_smart_ptr<uint64_t> addr("addr");
-
         while (!is_available_id()) wait();
 
-        hpdcache_test_sequence::segptr->next();
-        hpdcache_test_sequence::delay->next();
-        hpdcache_test_sequence::op->next();
-
-        addr->next();
-
         t = acquire_transaction<hpdcache_test_transaction_req>();
-        t->req_op = op->read();
+        t->req_op = hpdcache_test_transaction_req::HPDCACHE_REQ_STORE;
         t->req_wdata = create_random_data();
         t->req_sid = 0;
         t->req_tid = allocate_id();
@@ -121,7 +107,7 @@ private:
         uint64_t base = seg.get_base();
         uint64_t length = seg.get_length();
         uint32_t bytes = 1 << sz;
-        uint64_t address = ((base + (addr->read() % length)) / bytes) * bytes;
+        uint64_t address = ((base + (addr_dist(rg) % length)) / bytes) * bytes;
         uint32_t offset = address % HPDCACHE_REQ_DATA_BYTES;
 
         t->req_addr = address;
@@ -140,17 +126,14 @@ private:
         std::shared_ptr<hpdcache_test_mem_resp_model_base> mem_resp_model =
             this->get_mem_resp_model();
 
-        scv_bag<pair<int, int>> wa_delay_distribution;
-        scv_bag<pair<int, int>> wb_delay_distribution;
+        hpdcache_test_range_distribution<int> no_delay;
+        no_delay.add_value_weight(0, 0, 1);
 
-        wa_delay_distribution.push(pair<int, int>(0, 0), 100);
-        wb_delay_distribution.push(pair<int, int>(0, 0), 100);
-
-        mem_resp_model->get_ra_ready_delay_distribution()->keep_only(0);
-        mem_resp_model->get_rd_valid_delay_distribution()->keep_only(16);
-        mem_resp_model->set_wa_ready_delay_distribution(wa_delay_distribution);
-        mem_resp_model->set_wd_ready_delay_distribution(wa_delay_distribution);
-        mem_resp_model->set_wb_valid_delay_distribution(wb_delay_distribution);
+        mem_resp_model->set_ra_ready_delay(0);
+        mem_resp_model->set_rd_valid_delay(16);
+        mem_resp_model->set_wa_ready_delay_distribution(no_delay);
+        mem_resp_model->set_wd_ready_delay_distribution(no_delay);
+        mem_resp_model->set_wb_valid_delay_distribution(no_delay);
 
         wait();
 

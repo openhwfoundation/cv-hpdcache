@@ -32,7 +32,6 @@
 #include "mem_model.h"
 #include <iostream>
 #include <map>
-#include <scv.h>
 #include <systemc>
 
 #define DEBUG_HPDCACHE_TEST_MEM_RESP_MODEL 1
@@ -134,8 +133,7 @@ private:
         req.cacheable = mem_req_read_cacheable_i.read();
         sb_mem_read_req_o.write(req); // send request to scoreboard
 
-        ra_ready_delay->next();
-        for (int i = 0; i < ra_ready_delay->read(); i++) wait();
+        for (int i = 0, delay = ra_ready_delay.rand(); i < delay; i++) wait();
 
         mem_req_read_ready_o.write(true);
         wait();
@@ -326,8 +324,7 @@ private:
         mem_resp_read_valid_o.write(false);
         for (;;) {
             while (!read_resp_fifo.nb_read(read_resp)) wait();
-            rd_valid_delay->next();
-            for (int i = 0; i < rd_valid_delay->read(); i++) wait();
+            for (int i = 0, delay = rd_valid_delay.rand(); i < delay; i++) wait();
             sb_mem_read_resp_o.write(read_resp); // send response to scoreboard
             mem_resp_read_valid_o.write(true);
             mem_resp_read_error_o.write(read_resp.error);
@@ -347,8 +344,7 @@ private:
         mem_resp_write_valid_o.write(false);
         for (;;) {
             while (!write_resp_fifo.nb_read(resp)) wait();
-            wb_valid_delay->next();
-            for (int i = 0; i < wb_valid_delay->read(); i++) wait();
+            for (int i = 0, delay = wb_valid_delay.rand(); i < delay; i++) wait();
             sb_mem_write_resp_o.write(resp); // send response to scoreboard
             mem_resp_write_valid_o.write(true);
             mem_resp_write_is_atomic_o.write(resp.is_atomic);
@@ -385,8 +381,7 @@ private:
             while (!mem_req_write_valid_i.read()) wait();
 
             //  Wait for a random delay before setting the ready signal
-            wa_ready_delay->next();
-            for (int i = 0; i < wa_ready_delay->read(); ++i) wait();
+            for (int i = 0, delay = wa_ready_delay.rand(); i < delay; ++i) wait();
 
             //  Set the ready signal
             mem_req_write_ready_o.write(true);
@@ -418,8 +413,7 @@ private:
             while (!mem_req_write_data_valid_i.read()) wait();
 
             //  Wait for a random delay before setting the ready signal
-            wd_ready_delay->next();
-            for (int i = 0; i < wd_ready_delay->read(); ++i) wait();
+            for (int i = 0, delay = wd_ready_delay.rand(); i < delay; ++i) wait();
 
             //  Set the ready signal
             mem_req_write_data_ready_o.write(true);

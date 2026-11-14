@@ -27,11 +27,11 @@
 #define __HPDCACHE_TEST_MEM_RESP_MODEL_BASE_H__
 
 #include "hpdcache_test_defs.h"
+#include "hpdcache_test_range_distribution.h"
 #include "logger.h"
 #include "mem_model.h"
 #include <iostream>
 #include <map>
-#include <scv.h>
 #include <systemc>
 
 class hpdcache_test_mem_resp_model_base
@@ -58,6 +58,7 @@ public:
 
     using hpdcache_mem_atomic_e = hpdcache_test_transaction_mem_req::hpdcache_mem_atomic_e;
     using hpdcache_mem_command_e = hpdcache_test_transaction_mem_req::hpdcache_mem_command_e;
+    using delay_distribution_t = hpdcache_test_range_distribution<int>;
 
 protected:
     class mem_write_req_flit_t
@@ -121,11 +122,11 @@ protected:
     mem_model* memory_m;
     excl_reservation_buf_t excl_buf_m[1 << HPDCACHE_MEM_ID_WIDTH];
 
-    scv_smart_ptr<int> ra_ready_delay;
-    scv_smart_ptr<int> rd_valid_delay;
-    scv_smart_ptr<int> wa_ready_delay;
-    scv_smart_ptr<int> wd_ready_delay;
-    scv_smart_ptr<int> wb_valid_delay;
+    delay_distribution_t ra_ready_delay;
+    delay_distribution_t rd_valid_delay;
+    delay_distribution_t wa_ready_delay;
+    delay_distribution_t wd_ready_delay;
+    delay_distribution_t wb_valid_delay;
 
     static constexpr unsigned int MEM_NOC_DATA_WORDS = HPDCACHE_MEM_DATA_WIDTH / 64;
 
@@ -144,75 +145,67 @@ public:
         memory_m = new mem_model(mem_model_name.c_str(), mem_model::MEM_MODEL_INIT_RANDOM);
 
         // set default values for delay distributions
-        scv_bag<pair<int, int>> ra_delay_distribution;
-        ra_delay_distribution.push(pair<int, int>(0, 2), 90);
-        ra_delay_distribution.push(pair<int, int>(3, 8), 8);
-        ra_delay_distribution.push(pair<int, int>(9, 32), 2);
-        ra_ready_delay->set_mode(ra_delay_distribution);
+        ra_ready_delay.add_value_weight(0, 2, 90);
+        ra_ready_delay.add_value_weight(3, 8, 8);
+        ra_ready_delay.add_value_weight(9, 32, 2);
 
-        scv_bag<pair<int, int>> rd_delay_distribution;
-        rd_delay_distribution.push(pair<int, int>(0, 2), 8);
-        rd_delay_distribution.push(pair<int, int>(3, 8), 90);
-        rd_delay_distribution.push(pair<int, int>(9, 64), 2);
-        rd_valid_delay->set_mode(rd_delay_distribution);
+        rd_valid_delay.add_value_weight(0, 2, 8);
+        rd_valid_delay.add_value_weight(3, 8, 90);
+        rd_valid_delay.add_value_weight(9, 64, 2);
 
-        scv_bag<pair<int, int>> wa_delay_distribution;
-        wa_delay_distribution.push(pair<int, int>(0, 2), 90);
-        wa_delay_distribution.push(pair<int, int>(3, 8), 8);
-        wa_delay_distribution.push(pair<int, int>(9, 32), 2);
-        wa_ready_delay->set_mode(wa_delay_distribution);
+        wa_ready_delay.add_value_weight(0, 2, 90);
+        wa_ready_delay.add_value_weight(3, 8, 8);
+        wa_ready_delay.add_value_weight(9, 32, 2);
 
-        scv_bag<pair<int, int>> wd_delay_distribution;
-        wd_delay_distribution.push(pair<int, int>(0, 2), 90);
-        wd_delay_distribution.push(pair<int, int>(3, 8), 8);
-        wd_delay_distribution.push(pair<int, int>(9, 32), 2);
-        wd_ready_delay->set_mode(wd_delay_distribution);
+        wd_ready_delay.add_value_weight(0, 2, 90);
+        wd_ready_delay.add_value_weight(3, 8, 8);
+        wd_ready_delay.add_value_weight(9, 32, 2);
 
-        scv_bag<pair<int, int>> wb_delay_distribution;
-        wb_delay_distribution.push(pair<int, int>(0, 2), 8);
-        wb_delay_distribution.push(pair<int, int>(3, 8), 90);
-        wb_delay_distribution.push(pair<int, int>(9, 64), 2);
-        wb_valid_delay->set_mode(wb_delay_distribution);
+        wb_valid_delay.add_value_weight(0, 2, 8);
+        wb_valid_delay.add_value_weight(3, 8, 90);
+        wb_valid_delay.add_value_weight(9, 64, 2);
     }
 
     ~hpdcache_test_mem_resp_model_base() { delete memory_m; }
 
     void add_error_segment(const segment_t& s) { errorsegs.push_back(s); }
 
-    void set_ra_ready_delay_distribution(scv_bag<pair<int, int>>& dist)
+    void set_ra_ready_delay_distribution(const delay_distribution_t& dist)
     {
-        ra_ready_delay->set_mode(dist);
+        ra_ready_delay = dist;
     }
 
-    scv_smart_ptr<int> get_ra_ready_delay_distribution() { return ra_ready_delay; }
-
-    void set_rd_valid_delay_distribution(scv_bag<pair<int, int>>& dist)
+    void set_ra_ready_delay(int delay)
     {
-        rd_valid_delay->set_mode(dist);
+        ra_ready_delay = delay_distribution_t();
+        ra_ready_delay.add_value_weight(delay, delay, 1);
     }
 
-    scv_smart_ptr<int> get_rd_valid_delay_distribution() { return rd_valid_delay; }
-
-    void set_wa_ready_delay_distribution(scv_bag<pair<int, int>>& dist)
+    void set_rd_valid_delay_distribution(const delay_distribution_t& dist)
     {
-        wa_ready_delay->set_mode(dist);
+        rd_valid_delay = dist;
     }
 
-    scv_smart_ptr<int> get_wa_ready_delay_distribution() { return wa_ready_delay; }
-
-    void set_wd_ready_delay_distribution(scv_bag<pair<int, int>>& dist)
+    void set_rd_valid_delay(int delay)
     {
-        wd_ready_delay->set_mode(dist);
+        rd_valid_delay = delay_distribution_t();
+        rd_valid_delay.add_value_weight(delay, delay, 1);
     }
 
-    scv_smart_ptr<int> get_wd_ready_delay_distribution() { return wd_ready_delay; }
-
-    void set_wb_valid_delay_distribution(scv_bag<pair<int, int>>& dist)
+    void set_wa_ready_delay_distribution(const delay_distribution_t& dist)
     {
-        wb_valid_delay->set_mode(dist);
+        wa_ready_delay = dist;
     }
 
-    scv_smart_ptr<int> get_wb_valid_delay_distribution() { return wb_valid_delay; }
+    void set_wd_ready_delay_distribution(const delay_distribution_t& dist)
+    {
+        wd_ready_delay = dist;
+    }
+
+    void set_wb_valid_delay_distribution(const delay_distribution_t& dist)
+    {
+        wb_valid_delay = dist;
+    }
 
     bool within_region(uint64_t base0, uint64_t end0, uint64_t base1, uint64_t end1)
     {

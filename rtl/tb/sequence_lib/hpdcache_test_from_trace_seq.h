@@ -31,7 +31,6 @@
 #include "hpdcache_test_defs.h"
 #include "hpdcache_test_sequence.h"
 #include "hpdcache_test_trace_manager.h"
-#include "scv.h"
 
 /**
  * @class hpdcache_test_from_trace_seq

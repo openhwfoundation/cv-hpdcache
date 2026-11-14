@@ -132,8 +132,7 @@ endif
 VERILATOR_FLAGS     += $(CONF_DEFINES)
 
 VERILATOR_MAKEFLAGS += USER_CPPFLAGS="$(USER_CPPFLAGS)" \
-                       USER_LDFLAGS="-Wl,-rpath,$(SYSTEMC_LIBDIR)" \
-                       USER_LDLIBS="-lscv"
+                       USER_LDFLAGS="-Wl,-rpath,$(SYSTEMC_LIBDIR)"
 
 
 
