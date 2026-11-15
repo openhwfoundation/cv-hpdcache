@@ -43,10 +43,9 @@ class hpdcache_test_random_seq : public hpdcache_test_sequence
     void init_fault_inj()
     {
 #if CONF_HPDCACHE_TEST_FAULT_INJ_DIR
-        fault_inj_domain_dist.add_value_weight(hpdcache_fault_injection::domain_e::CACHE_DIR, 20),
+        fault_inj_domain_dist.add_value_weight(hpdcache_fault_injection::domain_e::CACHE_DIR, 20);
 #endif
-            fault_inj_domain_dist.add_value_weight(hpdcache_fault_injection::domain_e::CACHE_DAT,
-                                                   80);
+        fault_inj_domain_dist.add_value_weight(hpdcache_fault_injection::domain_e::CACHE_DAT, 80);
         fault_inj_domain_dist.init(rg);
     }
 
