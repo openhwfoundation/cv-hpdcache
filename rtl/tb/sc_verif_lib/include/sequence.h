@@ -48,7 +48,9 @@ public:
     {
     }
 
-    virtual ~Sequence(){};
+    virtual ~Sequence()
+    {
+    }
 
     template<typename T>
     std::shared_ptr<T> acquire_transaction()
