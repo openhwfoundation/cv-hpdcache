@@ -291,9 +291,8 @@ public:
                 contains_data = true;
                 break;
         }
-        os << "CORE_REQ"
-           << " / @ = " << req_addr.to_string(SC_HEX) << " / " << op_to_string(op) << " / SET = 0x"
-           << std::hex << get_cache_set() << std::dec << " / WORD = 0x" << std::hex
+        os << "CORE_REQ" << " / @ = " << req_addr.to_string(SC_HEX) << " / " << op_to_string(op)
+           << " / SET = 0x" << std::hex << get_cache_set() << std::dec << " / WORD = 0x" << std::hex
            << get_cache_word() << std::dec << " / TAG = 0x" << std::hex << get_cache_tag()
            << std::dec << " / SID = 0x" << std::hex << req_sid.to_uint() << std::dec
            << " / TID = 0x" << std::hex << req_tid.to_uint() << std::dec
@@ -601,9 +600,8 @@ public:
     {
         std::stringstream os;
 
-        os << "MEM_WRITE_RESP"
-           << " / ID = 0x" << std::hex << id << std::dec << (error != 0 ? " / ERROR" : "")
-           << (is_atomic ? " / ATOMIC" : "");
+        os << "MEM_WRITE_RESP" << " / ID = 0x" << std::hex << id << std::dec
+           << (error != 0 ? " / ERROR" : "") << (is_atomic ? " / ATOMIC" : "");
         return os.str();
     }
 

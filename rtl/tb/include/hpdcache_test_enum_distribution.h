@@ -12,23 +12,22 @@
 #ifndef __HPDCACHE_TEST_ENUM_DISTRIBUTION_H__
 #define __HPDCACHE_TEST_ENUM_DISTRIBUTION_H__
 
-#include <utility>
 #include <random>
+#include <utility>
 #include <vector>
 
-template <typename enum_type, class rand_gen = std::default_random_engine>
+template<typename enum_type, class rand_gen = std::default_random_engine>
 class hpdcache_test_enum_distribution
 {
 private:
-
     std::vector<enum_type> values;
     std::vector<int> weights;
-    std::discrete_distribution<int> *dist;
+    std::discrete_distribution<int>* dist;
     rand_gen rg;
 
 public:
-
-    hpdcache_test_enum_distribution() : dist(nullptr)
+    hpdcache_test_enum_distribution()
+      : dist(nullptr)
     {
     }
 

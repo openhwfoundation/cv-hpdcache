@@ -253,10 +253,10 @@ private:
     std::shared_ptr<hpdcache_test_sequence> seq;
     std::shared_ptr<hpdcache_test_mem_resp_model_base> mem_resp_model;
 
-    static constexpr unsigned int HPDCACHE_WORD_BYTES = HPDCACHE_WORD_WIDTH/8;
+    static constexpr unsigned int HPDCACHE_WORD_BYTES = HPDCACHE_WORD_WIDTH / 8;
     static constexpr unsigned int CORE_REQ_WORDS = HPDCACHE_REQ_WORDS;
-    static constexpr unsigned int CORE_REQ_BYTES = CORE_REQ_WORDS*HPDCACHE_WORD_BYTES;
-    static constexpr unsigned int CORE_REQ_DWORDS = (CORE_REQ_BYTES + 7)/8;
+    static constexpr unsigned int CORE_REQ_BYTES = CORE_REQ_WORDS * HPDCACHE_WORD_BYTES;
+    static constexpr unsigned int CORE_REQ_DWORDS = (CORE_REQ_BYTES + 7) / 8;
 
     struct inflight_entry_t
     {
@@ -427,13 +427,13 @@ private:
 
             uint32_t req_id = req.req_tid.to_uint();
             uint64_t req_addr = req.req_addr.to_uint64();
-            size_t   req_bytes = 1 << req.req_size.to_uint();
+            size_t req_bytes = 1 << req.req_size.to_uint();
 
             inflight_map_t::const_iterator it = inflight_m.find(req_id);
             if (it != inflight_m.end()) {
                 std::stringstream ss;
-                ss << "core request ID "
-                   << "0x" << std::hex << req_id << std::dec << " matches an inflight request";
+                ss << "core request ID " << "0x" << std::hex << req_id << std::dec
+                   << " matches an inflight request";
                 print_error(ss.str());
                 continue;
             }
@@ -486,7 +486,7 @@ private:
 
             const int _byte = (req_addr % 8);
             const int _word = (req_addr / 8) % CORE_REQ_DWORDS;
-            const int _words = (req_bytes + 7)/ 8;
+            const int _words = (req_bytes + 7) / 8;
 
             inflight_entry_t e;
             e.time = nb_cycles;
@@ -505,15 +505,16 @@ private:
             e.op = req.req_op.to_uint();
             if (req.is_store() || req.is_amo_sc() || req.is_amo()) {
                 for (int i = 0; i < CORE_REQ_DWORDS; i++) {
-                    e.wdata[i] = req.req_wdata.range(
-                            (i + 1)*HPDCACHE_WORD_WIDTH - 1,
-                            i*HPDCACHE_WORD_WIDTH).to_uint64();
-                    e.be[i] = req.req_be.range(
-                            (i + 1)*HPDCACHE_WORD_BYTES - 1,
-                            i*HPDCACHE_WORD_BYTES).to_uint();
+                    e.wdata[i] =
+                        req.req_wdata
+                            .range((i + 1) * HPDCACHE_WORD_WIDTH - 1, i * HPDCACHE_WORD_WIDTH)
+                            .to_uint64();
+                    e.be[i] =
+                        req.req_be.range((i + 1) * HPDCACHE_WORD_BYTES - 1, i * HPDCACHE_WORD_BYTES)
+                            .to_uint();
                     if ((CORE_REQ_BYTES < 8) && ((req_addr % 8) > 3)) {
                         e.wdata[i] <<= 32;
-                        e.be[i]    <<= 4;
+                        e.be[i] <<= 4;
                     }
                 }
             }
@@ -523,21 +524,21 @@ private:
                 e.is_error = mem_resp_model->within_error_region(e.addr, e.addr + e.bytes);
             }
 
-            uint64_t aligned_addr = align_to(req_addr, CORE_REQ_DWORDS*8);
+            uint64_t aligned_addr = align_to(req_addr, CORE_REQ_DWORDS * 8);
 
             if (!e.is_error && (req.is_load() || req.is_amo_lr() || req.is_amo())) {
                 memset(e.rdata, 0, sizeof(e.rdata));
                 memset(e.rv, 0, sizeof(e.rv));
                 for (int i = _word; i < (_word + _words); i++) {
-                    e.rdata[i] = ram_m->readMemory(aligned_addr + i*8, &e.rv[i]);
+                    e.rdata[i] = ram_m->readMemory(aligned_addr + i * 8, &e.rv[i]);
 #if DEBUG_HPDCACHE_TEST_SCOREBOARD
                     if (check_verbosity(sc_core::SC_DEBUG)) {
                         if (e.rv[i]) {
                             std::stringstream ss;
-                            ss << "check response for @0x" << std::hex
-                               << aligned_addr + i*8 << std::dec
-                               << " / expected = 0x" << std::hex << e.rdata[i] << std::dec
-                               << " / valid = 0x" << std::hex << (unsigned)e.rv[i] << std::dec;
+                            ss << "check response for @0x" << std::hex << aligned_addr + i * 8
+                               << std::dec << " / expected = 0x" << std::hex << e.rdata[i]
+                               << std::dec << " / valid = 0x" << std::hex << (unsigned)e.rv[i]
+                               << std::dec;
 
                             print_debug(ss.str());
                         }
@@ -625,16 +626,15 @@ private:
             //  keep track of written data
             if (req.is_store() && !e.is_error) {
                 for (int i = _word; i < (_word + _words); i++) {
-                    ram_m->writeMemory(aligned_addr + i*8, e.wdata[i], e.be[i]);
+                    ram_m->writeMemory(aligned_addr + i * 8, e.wdata[i], e.be[i]);
 
 #if DEBUG_HPDCACHE_TEST_SCOREBOARD
                     if (check_verbosity(sc_core::SC_DEBUG)) {
                         if (e.be[i]) {
                             std::stringstream ss;
-                            ss << "store sb.mem @0x" << std::hex
-                               << aligned_addr + i*8 << std::dec << " = 0x"
-                               << std::hex << e.wdata[i] << std::dec << " / be = 0x" << std::hex
-                               << (unsigned)e.be[i] << std::dec;
+                            ss << "store sb.mem @0x" << std::hex << aligned_addr + i * 8 << std::dec
+                               << " = 0x" << std::hex << e.wdata[i] << std::dec << " / be = 0x"
+                               << std::hex << (unsigned)e.be[i] << std::dec;
 
                             print_debug(ss.str());
                         }
@@ -669,8 +669,7 @@ private:
             inflight_map_t::const_iterator it = inflight_m.find(resp.rsp_tid.to_uint());
             if (it == inflight_m.end()) {
                 std::stringstream ss;
-                ss << "core response ID "
-                   << "0x" << std::hex << resp.rsp_tid.to_uint() << std::dec
+                ss << "core response ID " << "0x" << std::hex << resp.rsp_tid.to_uint() << std::dec
                    << " does not match any inflight request";
                 print_error(ss.str());
                 continue;
@@ -698,11 +697,13 @@ private:
                 //  check the response status for SC operations
                 bool sc_ok;
                 if (e.is_amo_sc) {
-                    const uint64_t sc_addr = aligned_addr + _word*8;;
+                    const uint64_t sc_addr = aligned_addr + _word * 8;
+                    ;
 
-                    uint64_t sc_resp = resp.rsp_rdata.range(
-                            (_word + 1)*HPDCACHE_WORD_WIDTH - 1,
-                            _word*HPDCACHE_WORD_WIDTH).to_uint64();
+                    uint64_t sc_resp = resp.rsp_rdata
+                                           .range((_word + 1) * HPDCACHE_WORD_WIDTH - 1,
+                                                  _word * HPDCACHE_WORD_WIDTH)
+                                           .to_uint64();
                     if (e.bytes == 4) {
                         sc_resp = (uint32_t)sc_resp;
                     }
@@ -723,9 +724,9 @@ private:
                     if (check_verbosity(sc_core::SC_DEBUG)) {
                         if (e.be[_word]) {
                             std::stringstream ss;
-                            ss << "sc sb.mem @0x" << std::hex << sc_addr << std::dec
-                               << " = 0x" << std::hex << e.wdata[_word] << std::dec
-                               << " / be = 0x" << std::hex << (unsigned)e.be[_word] << std::dec;
+                            ss << "sc sb.mem @0x" << std::hex << sc_addr << std::dec << " = 0x"
+                               << std::hex << e.wdata[_word] << std::dec << " / be = 0x" << std::hex
+                               << (unsigned)e.be[_word] << std::dec;
                             print_debug(ss.str());
                         }
                     }
@@ -736,9 +737,10 @@ private:
                 if (e.is_read || e.is_amo || e.is_amo_lr) {
                     uint64_t rdata[CORE_REQ_DWORDS];
                     for (int i = 0; i < CORE_REQ_DWORDS; i++) {
-                        rdata[i] = resp.rsp_rdata.range(
-                                (i + 1)*HPDCACHE_WORD_WIDTH - 1,
-                                i*HPDCACHE_WORD_WIDTH).to_uint64();
+                        rdata[i] =
+                            resp.rsp_rdata
+                                .range((i + 1) * HPDCACHE_WORD_WIDTH - 1, i * HPDCACHE_WORD_WIDTH)
+                                .to_uint64();
                         if ((CORE_REQ_BYTES < 8) && (_byte > 3)) {
                             rdata[i] <<= 32;
                         }
@@ -749,15 +751,15 @@ private:
                     for (int i = _byte; i < (_byte + e.bytes); i++) {
                         const uint8_t recv = reinterpret_cast<const uint8_t*>(rdata)[i];
                         const uint8_t expc = reinterpret_cast<const uint8_t*>(e.rdata)[i];
-                        const uint8_t rv = e.rv[i/8];
+                        const uint8_t rv = e.rv[i / 8];
 
                         if ((rv >> (i % 8)) & 0x1) {
                             if (recv != expc) {
                                 std::stringstream ss;
-                                ss << "response data is wrong"
-                                   << " / @0x" << std::hex << aligned_addr + i << std::dec
-                                   << " / actual = 0x" << std::hex << (unsigned)recv << std::dec
-                                   << " / expected = 0x" << std::hex << (unsigned)expc << std::dec;
+                                ss << "response data is wrong" << " / @0x" << std::hex
+                                   << aligned_addr + i << std::dec << " / actual = 0x" << std::hex
+                                   << (unsigned)recv << std::dec << " / expected = 0x" << std::hex
+                                   << (unsigned)expc << std::dec;
                                 print_error(ss.str());
                             }
                         }
@@ -767,8 +769,8 @@ private:
                     //  update the memory with the computed AMO word
                     //  {{{
                     if (e.is_amo) {
-                        unsigned offset = (e.addr % 8)*8;
-                        uint64_t amo_addr = aligned_addr + _word*8;
+                        unsigned offset = (e.addr % 8) * 8;
+                        uint64_t amo_addr = aligned_addr + _word * 8;
                         uint64_t amo_new = e.wdata[_word];
                         uint64_t amo_old = rdata[_word];
                         uint64_t amo_res;
@@ -778,7 +780,7 @@ private:
                             amo_new = static_cast<uint32_t>(amo_new >> offset);
                             amo_old = static_cast<uint32_t>(amo_old >> offset);
                         }
-                        amo_res   = hpdcache_test_amo::compute_amo(e.op, amo_old, amo_new, e.bytes);
+                        amo_res = hpdcache_test_amo::compute_amo(e.op, amo_old, amo_new, e.bytes);
                         amo_res <<= offset;
                         amo_be = e.be[_word];
                         ram_m->writeMemory(amo_addr, amo_res, amo_be);
@@ -788,11 +790,11 @@ private:
                             if (amo_be) {
                                 std::stringstream ss;
                                 ss << hpdcache_test_transaction_req::op_to_string(e.op)
-                                   << " sb.mem @0x" << std::hex << amo_addr << std::dec
-                                   << " = 0x" << std::hex << amo_res << std::dec
-                                   << " / be = 0x" << std::hex << (unsigned)amo_be << std::dec
-                                   << " / amo(old) = 0x" << std::hex << amo_old << std::dec
-                                   << " / amo(new) = 0x" << std::hex << amo_new << std::dec;
+                                   << " sb.mem @0x" << std::hex << amo_addr << std::dec << " = 0x"
+                                   << std::hex << amo_res << std::dec << " / be = 0x" << std::hex
+                                   << (unsigned)amo_be << std::dec << " / amo(old) = 0x" << std::hex
+                                   << amo_old << std::dec << " / amo(new) = 0x" << std::hex
+                                   << amo_new << std::dec;
 
                                 print_debug(ss.str());
                             }
@@ -827,8 +829,8 @@ private:
             inflight_mem_map_t::const_iterator it = inflight_mem_read_m.find(req_id);
             if (it != inflight_mem_read_m.end()) {
                 std::stringstream ss;
-                ss << "memory read request ID "
-                   << "0x" << std::hex << req_id << std::dec << " matches an inflight request";
+                ss << "memory read request ID " << "0x" << std::hex << req_id << std::dec
+                   << " matches an inflight request";
                 print_error(ss.str());
                 continue;
             }
@@ -890,8 +892,7 @@ private:
             inflight_mem_map_t::iterator it = inflight_mem_read_m.find(resp.id);
             if (it == inflight_mem_read_m.end()) {
                 std::stringstream ss;
-                ss << "memory read response ID "
-                   << "0x" << std::hex << resp.id << std::dec
+                ss << "memory read response ID " << "0x" << std::hex << resp.id << std::dec
                    << " does not match any inflight request";
                 print_error(ss.str());
                 continue;
@@ -957,17 +958,14 @@ private:
                 const uint64_t aligned_addr = align_to(mem_req->addr, MEM_BYTES);
                 const int _word = (mem_req->addr / 8) % MEM_WORDS;
                 const int _byte = (mem_req->addr % 8);
-                const int _words = (mem_req->bytes + 7)/8;
+                const int _words = (mem_req->bytes + 7) / 8;
 
 #if DEBUG_HPDCACHE_TEST_SCOREBOARD
                 if (check_verbosity(sc_core::SC_DEBUG)) {
                     std::stringstream ss;
-                    ss << std::hex << "mem_resp @ = 0x" << mem_req->addr << std::dec
-                       << std::hex << " / @aligned = 0x" << aligned_addr << std::dec
-                       << " / word = " << _word
-                       << " / byte = " << _byte
-                       << " / words = " << _words
-                       << std::endl;
+                    ss << std::hex << "mem_resp @ = 0x" << mem_req->addr << std::dec << std::hex
+                       << " / @aligned = 0x" << aligned_addr << std::dec << " / word = " << _word
+                       << " / byte = " << _byte << " / words = " << _words << std::endl;
                     print_debug(ss.str());
                 }
 #endif
@@ -978,8 +976,8 @@ private:
                 uint64_t rdata[MEM_WORDS];
                 uint8_t vmask[MEM_WORDS];
                 for (int i = 0; i < MEM_WORDS; i++) {
-                    rdata[i] = resp.data.range((i + 1)*64 - 1, i*64).to_uint64();
-                    vmask[i] = ram_m->readBytemask(aligned_addr + i*8);
+                    rdata[i] = resp.data.range((i + 1) * 64 - 1, i * 64).to_uint64();
+                    vmask[i] = ram_m->readBytemask(aligned_addr + i * 8);
                 }
 
                 uint8_t be[MEM_WORDS];
@@ -992,14 +990,13 @@ private:
                 }
 
                 for (int i = 0; i < MEM_WORDS; i++) {
-                    ram_m->writeMemory(aligned_addr + i*8, rdata[i], be[i]);
+                    ram_m->writeMemory(aligned_addr + i * 8, rdata[i], be[i]);
 #if DEBUG_HPDCACHE_TEST_SCOREBOARD
                     if (check_verbosity(sc_core::SC_DEBUG)) {
                         if (be[i]) {
                             std::stringstream ss;
-                            ss << "update sb.mem @0x"
-                               << std::hex << aligned_addr + i*8 << std::dec
-                               << " = 0x" << std::hex << rdata[i] << std::dec
+                            ss << "update sb.mem @0x" << std::hex << aligned_addr + i * 8
+                               << std::dec << " = 0x" << std::hex << rdata[i] << std::dec
                                << " / be = 0x" << std::hex << (unsigned)be[i] << std::dec;
                             print_debug(ss.str());
                         }
@@ -1035,8 +1032,8 @@ private:
             inflight_mem_map_t::const_iterator it = inflight_mem_write_m.find(req_id);
             if (it != inflight_mem_write_m.end()) {
                 std::stringstream ss;
-                ss << "memory write request ID "
-                   << "0x" << std::hex << req_id << std::dec << " matches an inflight request";
+                ss << "memory write request ID " << "0x" << std::hex << req_id << std::dec
+                   << " matches an inflight request";
                 print_error(ss.str());
                 continue;
             }
@@ -1118,8 +1115,7 @@ private:
             inflight_mem_map_t::const_iterator it = inflight_mem_write_m.find(resp.id);
             if (it == inflight_mem_write_m.end()) {
                 std::stringstream ss;
-                ss << "memory write response ID "
-                   << "0x" << std::hex << resp.id << std::dec
+                ss << "memory write response ID " << "0x" << std::hex << resp.id << std::dec
                    << " does not match any inflight request";
                 print_error(ss.str());
                 continue;

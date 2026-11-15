@@ -10,7 +10,7 @@
 #include <utility>
 #include <vector>
 
-template <typename value_type, class rand_gen = std::default_random_engine>
+template<typename value_type, class rand_gen = std::default_random_engine>
 class hpdcache_test_range_distribution
 {
 private:
