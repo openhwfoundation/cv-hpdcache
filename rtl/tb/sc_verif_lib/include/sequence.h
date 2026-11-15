@@ -44,11 +44,9 @@ public:
       , clk_i("clk_i")
       , rst_ni("rst_ni")
       , transaction_fifo_o("transaction_fifo_o")
-      , transaction_ret_i("transaction_ret_i")
-    {
-    }
+      , transaction_ret_i("transaction_ret_i") {}
 
-    virtual ~Sequence(){};
+    virtual ~Sequence() {};
 
     template<typename T>
     std::shared_ptr<T> acquire_transaction()

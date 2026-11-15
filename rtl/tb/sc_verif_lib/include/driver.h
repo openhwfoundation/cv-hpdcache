@@ -44,7 +44,7 @@ public:
       , clk_i("clk_i")
       , rst_ni("rst_ni")
       , transaction_fifo_i("transaction_fifo_i")
-      , transaction_ret_o("transaction_ret_o"){};
+      , transaction_ret_o("transaction_ret_o") {}
 
     virtual ~Driver() {}
 };
