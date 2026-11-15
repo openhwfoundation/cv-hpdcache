@@ -160,11 +160,11 @@ class hpdcache_test_random_seq : public hpdcache_test_sequence
 
     inline sc_bv<HPDCACHE_REQ_DATA_WIDTH> create_random_data()
     {
-        sc_uint<HPDCACHE_REQ_DATA_WIDTH> ret;
+        sc_bv<HPDCACHE_REQ_DATA_WIDTH> ret;
         for (int i = 0; i < HPDCACHE_REQ_DATA_WIDTH / 32; i++) {
             ret.range((i + 1) * 32 - 1, i * 32) = data_dist(rg);
         }
-        return sc_bv<HPDCACHE_REQ_DATA_WIDTH>(ret);
+        return ret;
     }
 
     inline uint32_t create_random_size(bool is_amo)
