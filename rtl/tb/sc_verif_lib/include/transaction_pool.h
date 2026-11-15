@@ -25,7 +25,6 @@
 #ifndef __TRANSACTION_POOL_H__
 #define __TRANSACTION_POOL_H__
 
-#include "transaction.h"
 #include <cassert>
 #include <iostream>
 #include <list>
@@ -34,25 +33,23 @@
 #include <string>
 #include <type_traits>
 
+#include "transaction.h"
+
 class Transaction_pool
 {
     typedef std::list<std::shared_ptr<Transaction>> Transaction_list;
 
-public:
+  public:
     Transaction_pool(int trans_bundle_sz = 10)
-      : trans_bundle_sz(trans_bundle_sz)
-      , nb_trans(0)
-      , nb_allocated(0)
-      , nb_release(0)
+        : trans_bundle_sz(trans_bundle_sz), nb_trans(0), nb_allocated(0), nb_release(0)
     {
     }
 
-    template<typename T>
-    std::shared_ptr<T> acquire_transaction()
+    template <typename T> std::shared_ptr<T> acquire_transaction()
     {
         std::shared_ptr<Transaction> ret;
 
-        static_assert(std::is_convertible<T*, Transaction*>::value,
+        static_assert(std::is_convertible<T *, Transaction *>::value,
                       "T must derive from Transaction");
 
         // no available transaction, create some some new ones
@@ -75,10 +72,9 @@ public:
         return std::dynamic_pointer_cast<T>(ret);
     }
 
-    template<typename T>
-    void release_transaction(std::shared_ptr<T>& t)
+    template <typename T> void release_transaction(std::shared_ptr<T> &t)
     {
-        static_assert(std::is_convertible<T*, Transaction*>::value,
+        static_assert(std::is_convertible<T *, Transaction *>::value,
                       "T must derive from Transaction");
 
         nb_release++;
@@ -99,7 +95,7 @@ public:
         Logger::debug(ss.str());
     }
 
-private:
+  private:
     Transaction_list pool;
     int trans_bundle_sz;
     uint64_t nb_trans;

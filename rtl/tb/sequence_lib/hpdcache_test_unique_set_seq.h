@@ -26,21 +26,20 @@
 #ifndef __HPDCACHE_TEST_UNIQUE_SET_SEQ_H__
 #define __HPDCACHE_TEST_UNIQUE_SET_SEQ_H__
 
+#include <random>
+#include <systemc>
+
 #include "hpdcache_test_defs.h"
 #include "hpdcache_test_enum_distribution.h"
 #include "hpdcache_test_range_distribution.h"
 #include "hpdcache_test_sequence.h"
-#include <random>
-#include <systemc>
 
 class hpdcache_test_unique_set_seq : public hpdcache_test_sequence
 {
-public:
+  public:
     hpdcache_test_unique_set_seq(sc_core::sc_module_name nm)
-      : hpdcache_test_sequence(nm, "unique_set_seq")
-      , amo_sc_do_dist(.75)
-      , need_rsp_dist(.95)
-      , size_dist(0, LOG2_REQ_DATA_BYTES)
+        : hpdcache_test_sequence(nm, "unique_set_seq"), amo_sc_do_dist(.75), need_rsp_dist(.95),
+          size_dist(0, LOG2_REQ_DATA_BYTES)
     {
         SC_THREAD(run);
         sensitive << clk_i.pos();
@@ -72,7 +71,7 @@ public:
         init_distributions();
     }
 
-private:
+  private:
     hpdcache_test_sequence::hpdcache_test_memory_segment seg[4];
     uint64_t set;
     std::default_random_engine rg;
@@ -82,8 +81,8 @@ private:
     std::bernoulli_distribution amo_sc_do_dist;
     std::bernoulli_distribution need_rsp_dist;
     std::uniform_int_distribution<uint32_t> size_dist;
-    std::uniform_int_distribution<uint64_t> set_dist{ 0, HPDCACHE_SETS - 1 };
-    std::uniform_int_distribution<int> lrsc_inbetween_instrs_dist{ 0, 10 };
+    std::uniform_int_distribution<uint64_t> set_dist{0, HPDCACHE_SETS - 1};
+    std::uniform_int_distribution<int> lrsc_inbetween_instrs_dist{0, 10};
     hpdcache_test_enum_distribution<int> seg_dist;
     hpdcache_test_enum_distribution<hpdcache_test_transaction_req::hpdcache_wr_policy_hint_e>
         wr_policy_dist;
@@ -123,8 +122,8 @@ private:
         return (address & ~set_mask) | (set << HPDCACHE_CL_OFFSET_WIDTH);
     }
 
-    inline hpdcache_test_transaction_req::hpdcache_wr_policy_hint_e select_random_wr_policy(
-        hpdcache_test_memory_segment::wr_policy_e seg_wr_policy)
+    inline hpdcache_test_transaction_req::hpdcache_wr_policy_hint_e
+    select_random_wr_policy(hpdcache_test_memory_segment::wr_policy_e seg_wr_policy)
     {
         if (seg_wr_policy == hpdcache_test_memory_segment::WR_POLICY_RANDOM) {
             return wr_policy_dist.rand();
@@ -144,7 +143,8 @@ private:
         hpdcache_test_memory_segment::wr_policy_e seg_wr_policy;
         int segn;
 
-        while (!is_available_id()) wait();
+        while (!is_available_id())
+            wait();
 
         segn = seg_dist.rand();
         seg_wr_policy = seg[segn].get_wr_policy_hint();
@@ -191,7 +191,8 @@ private:
     {
         std::shared_ptr<hpdcache_test_transaction_req> t;
 
-        while (!is_available_id()) wait();
+        while (!is_available_id())
+            wait();
 
         uint32_t sz = create_random_size(true);
         uint32_t bytes = 1 << sz;
@@ -214,7 +215,8 @@ private:
 
     void run()
     {
-        while (rst_ni == 0) wait();
+        while (rst_ni == 0)
+            wait();
 
         wait();
 
@@ -272,7 +274,7 @@ private:
     }
 
     void init_op_distribution(
-        hpdcache_test_enum_distribution<hpdcache_test_transaction_req::hpdcache_req_op_e>& dist,
+        hpdcache_test_enum_distribution<hpdcache_test_transaction_req::hpdcache_req_op_e> &dist,
         bool include_amo)
     {
         using op_e = hpdcache_test_transaction_req::hpdcache_req_op_e;

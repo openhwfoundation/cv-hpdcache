@@ -12,30 +12,24 @@
 #ifndef __HPDCACHE_TEST_RANDOM_SEQ_H__
 #define __HPDCACHE_TEST_RANDOM_SEQ_H__
 
+#include <random>
+#include <systemc>
+
 #include "hpdcache_test_defs.h"
 #include "hpdcache_test_enum_distribution.h"
 #include "hpdcache_test_sequence.h"
-#include <random>
-#include <systemc>
 
 #define HPDCACHE_TEST_SEQUENCE_ENABLE_ERROR_SEGMENTS 1
 #define HPDCACHE_TEST_SEQUENCE_AMO_SUPPORT true
 
 class hpdcache_test_random_seq : public hpdcache_test_sequence
 {
-public:
+  public:
     hpdcache_test_random_seq(sc_core::sc_module_name nm)
-      : hpdcache_test_sequence(nm, "random_seq")
-      , delay_dist(2)
-      , amo_sc_do_dist(.75)
-      , need_rsp_dist(.95)
-      , size_dist(0, LOG2_REQ_DATA_BYTES)
-      , fault_inj_dist(.01)
-      , fault_inj_way_dist(0, HPDCACHE_WAYS - 1)
-      , fault_inj_double_dist(.05)
-      , wr_policy_dist()
-      , seg_dist()
-      , op_dist()
+        : hpdcache_test_sequence(nm, "random_seq"), delay_dist(2), amo_sc_do_dist(.75),
+          need_rsp_dist(.95), size_dist(0, LOG2_REQ_DATA_BYTES), fault_inj_dist(.01),
+          fault_inj_way_dist(0, HPDCACHE_WAYS - 1), fault_inj_double_dist(.05), wr_policy_dist(),
+          seg_dist(), op_dist()
     {
         SC_THREAD(run);
         sensitive << clk_i.pos();
@@ -135,7 +129,7 @@ public:
         op_dist.init(rg);
     }
 
-private:
+  private:
     using wr_policy_e = hpdcache_test_transaction_req::hpdcache_wr_policy_hint_e;
     using op_e = hpdcache_test_transaction_req::hpdcache_req_op_e;
     using fault_domain_e = hpdcache_fault_injection::domain_e;
@@ -191,7 +185,8 @@ private:
         hpdcache_test_memory_segment::wr_policy_e seg_wr_policy;
         int segn;
 
-        while (!is_available_id()) wait();
+        while (!is_available_id())
+            wait();
 
         segn = seg_dist.rand();
 
@@ -269,7 +264,8 @@ private:
     {
         std::shared_ptr<hpdcache_test_transaction_req> t;
 
-        while (!is_available_id()) wait();
+        while (!is_available_id())
+            wait();
 
         uint32_t sz = create_random_size(true);
         uint32_t bytes = 1 << sz;
@@ -292,7 +288,6 @@ private:
 
     void run()
     {
-
 #if HPDCACHE_TEST_SEQUENCE_ENABLE_ERROR_SEGMENTS
         if (hpdcache_test_sequence::mem_resp_model) {
             hpdcache_test_sequence::mem_resp_model->add_error_segment(
@@ -304,7 +299,8 @@ private:
         }
 #endif
 
-        while (rst_ni == 0) wait();
+        while (rst_ni == 0)
+            wait();
 
         wait();
 

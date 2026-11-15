@@ -17,7 +17,7 @@
 
 class mem_model
 {
-public:
+  public:
     enum mem_model_init_mode_e
     {
         MEM_MODEL_NO_INIT,
@@ -34,52 +34,52 @@ public:
     typedef std::map<uint64_t, data_entry_t> mem_array_t;
     typedef std::pair<uint64_t, data_entry_t> mem_array_pair_t;
 
-    mem_model(const char* name,
-              mem_model_init_mode_e init_mode = MEM_MODEL_INIT_RANDOM,
+    mem_model(const char *name, mem_model_init_mode_e init_mode = MEM_MODEL_INIT_RANDOM,
               uint64_t init_val = 0)
-      : name_m(name)
-      , init_mode_m(init_mode)
-      , init_val_m(init_val)
+        : name_m(name), init_mode_m(init_mode), init_val_m(init_val)
     {
     }
 
     ~mem_model() {}
 
-    mem_array_t* getMemPtr() { return &mem_array_m; }
+    mem_array_t *getMemPtr() { return &mem_array_m; }
 
-    const char* getName() { return name_m.c_str(); }
+    const char *getName() { return name_m.c_str(); }
 
-    uint64_t readMemory(uint64_t word_addr, uint8_t* vmask = nullptr)
+    uint64_t readMemory(uint64_t word_addr, uint8_t *vmask = nullptr)
     {
         mem_array_t::const_iterator it;
 
         //  check if the target address was already accessed
         it = mem_array_m.find(word_addr);
         if (it != mem_array_m.end()) {
-            const data_entry_t& x = it->second;
-            if (vmask != nullptr) *vmask = x.vmask;
+            const data_entry_t &x = it->second;
+            if (vmask != nullptr)
+                *vmask = x.vmask;
             return x.data;
         }
 
         //  addr not found
         uint64_t value;
         switch (init_mode_m) {
-            case MEM_MODEL_NO_INIT:
-                if (vmask != nullptr) *vmask = 0x00;
-                return 0xdeadbeafbadcab1eull;
-            case MEM_MODEL_INIT_RANDOM:
-                value = ((uint64_t)rand() << 32) | (uint64_t)rand();
-                break;
-            case MEM_MODEL_INIT_VALUE:
-                value = init_val_m;
-                break;
+        case MEM_MODEL_NO_INIT:
+            if (vmask != nullptr)
+                *vmask = 0x00;
+            return 0xdeadbeafbadcab1eull;
+        case MEM_MODEL_INIT_RANDOM:
+            value = ((uint64_t)rand() << 32) | (uint64_t)rand();
+            break;
+        case MEM_MODEL_INIT_VALUE:
+            value = init_val_m;
+            break;
         }
         //  if init mode selected, add the word to the memory
         data_entry_t x;
         x.data = value;
         x.vmask = 0xff;
         mem_array_m.insert(mem_array_pair_t(word_addr, x));
-        if (vmask != nullptr) *vmask = x.vmask;
+        if (vmask != nullptr)
+            *vmask = x.vmask;
         return value;
     }
 
@@ -91,7 +91,7 @@ public:
         //  check if the target address was already accessed
         it = mem_array_m.find(word_addr);
         if (it != mem_array_m.end()) {
-            data_entry_t& x = it->second;
+            data_entry_t &x = it->second;
             x.data = (x.data & ~bmask) | (data & bmask);
             x.vmask |= mask;
             return;
@@ -101,13 +101,13 @@ public:
         //  written data with random data
         uint64_t value;
         switch (init_mode_m) {
-            case MEM_MODEL_NO_INIT:
-            case MEM_MODEL_INIT_RANDOM:
-                value = ((uint64_t)rand() << 32) | (uint64_t)rand();
-                break;
-            case MEM_MODEL_INIT_VALUE:
-                value = init_val_m;
-                break;
+        case MEM_MODEL_NO_INIT:
+        case MEM_MODEL_INIT_RANDOM:
+            value = ((uint64_t)rand() << 32) | (uint64_t)rand();
+            break;
+        case MEM_MODEL_INIT_VALUE:
+            value = init_val_m;
+            break;
         }
         data_entry_t x;
         x.data = (value & ~bmask) | (data & bmask);
@@ -122,7 +122,7 @@ public:
         //  check if the target address was already accessed
         it = mem_array_m.find(word_addr);
         if (it != mem_array_m.end()) {
-            const data_entry_t& x = it->second;
+            const data_entry_t &x = it->second;
             return x.vmask;
         }
         return 0x0;
@@ -143,7 +143,7 @@ public:
         return mask;
     }
 
-protected:
+  protected:
     std::string name_m;
     mem_array_t mem_array_m;
     mem_model_init_mode_e init_mode_m;

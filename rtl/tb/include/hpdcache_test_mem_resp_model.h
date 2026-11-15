@@ -26,21 +26,20 @@
 #ifndef __HPDCACHE_TEST_MEM_RESP_MODEL_H__
 #define __HPDCACHE_TEST_MEM_RESP_MODEL_H__
 
-#include "hpdcache_test_defs.h"
-#include "hpdcache_test_mem_resp_model_base.h"
-#include "logger.h"
-#include "mem_model.h"
 #include <iostream>
 #include <map>
 #include <systemc>
 
+#include "hpdcache_test_defs.h"
+#include "hpdcache_test_mem_resp_model_base.h"
+#include "logger.h"
+#include "mem_model.h"
+
 #define DEBUG_HPDCACHE_TEST_MEM_RESP_MODEL 1
 
-class hpdcache_test_mem_resp_model
-  : public sc_module
-  , public hpdcache_test_mem_resp_model_base
+class hpdcache_test_mem_resp_model : public sc_module, public hpdcache_test_mem_resp_model_base
 {
-public:
+  public:
     sc_in<bool> clk_i;
     sc_in<bool> rst_ni;
 
@@ -88,15 +87,14 @@ public:
     sc_fifo_out<hpdcache_test_transaction_mem_write_req> sb_mem_write_req_o;
     sc_fifo_out<hpdcache_test_transaction_mem_write_resp> sb_mem_write_resp_o;
 
-private:
+  private:
 #if SC_VERSION_MAJOR < 3
     SC_HAS_PROCESS(hpdcache_test_mem_resp_model);
 #endif
 
-public:
+  public:
     hpdcache_test_mem_resp_model(sc_module_name nm)
-      : sc_module(nm)
-      , hpdcache_test_mem_resp_model_base(std::string(nm))
+        : sc_module(nm), hpdcache_test_mem_resp_model_base(std::string(nm))
     {
         SC_THREAD(read_process);
         sensitive << clk_i.neg();
@@ -117,7 +115,7 @@ public:
         sensitive << clk_i.pos();
     }
 
-private:
+  private:
     void readOperation()
     {
         hpdcache_test_transaction_mem_read_req req;
@@ -133,7 +131,8 @@ private:
         req.cacheable = mem_req_read_cacheable_i.read();
         sb_mem_read_req_o.write(req); // send request to scoreboard
 
-        for (int i = 0, delay = ra_ready_delay.rand(); i < delay; i++) wait();
+        for (int i = 0, delay = ra_ready_delay.rand(); i < delay; i++)
+            wait();
 
         mem_req_read_ready_o.write(true);
         wait();
@@ -148,14 +147,16 @@ private:
                 resp.error = 1;
                 resp.id = req.id;
                 resp.last = (i == req.len);
-                while (!read_resp_fifo.nb_write(resp)) wait();
+                while (!read_resp_fifo.nb_write(resp))
+                    wait();
             }
             return;
         }
 
         //  do the read operation on the memory array
         size_t words = (1 << req.size) / 8;
-        if (words == 0) words = 1;
+        if (words == 0)
+            words = 1;
 
         if (req.is_ldex()) {
             const uint64_t n = 1 << req.size;
@@ -185,7 +186,8 @@ private:
             resp.error = 0;
             resp.id = req.id;
             resp.last = (i == req.len);
-            while (!read_resp_fifo.nb_write(resp)) wait();
+            while (!read_resp_fifo.nb_write(resp))
+                wait();
 
             addr = ((addr >> 3) + words) << 3;
         }
@@ -203,8 +205,8 @@ private:
         bool excl_ok = false;
 
         unsigned int atop = req.atomic;
-        bool is_amo = ((command == hpdcache_mem_command_e::HPDCACHE_MEM_ATOMIC)
-                       && (atop != hpdcache_mem_atomic_e::HPDCACHE_MEM_ATOMIC_STEX));
+        bool is_amo = ((command == hpdcache_mem_command_e::HPDCACHE_MEM_ATOMIC) &&
+                       (atop != hpdcache_mem_atomic_e::HPDCACHE_MEM_ATOMIC_STEX));
 
         //  check if the address is in an error segment. If it is, send a
         //  response with the error flag asserted
@@ -215,18 +217,20 @@ private:
                 read_resp.error = 0;
                 read_resp.id = req.id;
                 read_resp.last = true;
-                while (!read_resp_fifo.nb_write(read_resp)) wait();
+                while (!read_resp_fifo.nb_write(read_resp))
+                    wait();
             }
 
             resp.is_atomic = 0;
             resp.error = 1;
             resp.id = req.id;
-            while (!write_resp_fifo.nb_write(resp)) wait();
+            while (!write_resp_fifo.nb_write(resp))
+                wait();
             return;
         }
 
         if (req.is_stex()) {
-            excl_reservation_buf_t& e = excl_buf_m[req.id];
+            excl_reservation_buf_t &e = excl_buf_m[req.id];
             if (e.valid) {
                 e.valid = false;
                 excl_ok = within_region(addr, end_addr, e.base_addr, e.end_addr);
@@ -270,7 +274,8 @@ private:
         //  compute the number of words to write
         if (!req.is_stex() || excl_ok) {
             size_t words = bytes / 8;
-            if (words == 0) words = 1;
+            if (words == 0)
+                words = 1;
 
             //  do the write operation on the memory array
             for (int w = 0; w < words; w++) {
@@ -278,7 +283,8 @@ private:
                 uint8_t be = req.be.range((i + 1) * 8 - 1, i * 8).to_uint();
 
                 //  skip the write operation if the byte enable is all 0
-                if (be == 0) continue;
+                if (be == 0)
+                    continue;
 
                 st_data =
                     is_amo ? amo_result : req.data.range((i + 1) * 64 - 1, i * 64).to_uint64();
@@ -304,7 +310,8 @@ private:
                 read_resp.error = 0;
                 read_resp.id = req.id;
                 read_resp.last = true;
-                while (!read_resp_fifo.nb_write(read_resp)) wait();
+                while (!read_resp_fifo.nb_write(read_resp))
+                    wait();
             }
         }
 
@@ -312,7 +319,8 @@ private:
         resp.is_atomic = req.is_stex() && excl_ok;
         resp.error = 0;
         resp.id = req.id;
-        while (!write_resp_fifo.nb_write(resp)) wait();
+        while (!write_resp_fifo.nb_write(resp))
+            wait();
     }
 
     void read_response_process()
@@ -321,15 +329,18 @@ private:
 
         mem_resp_read_valid_o.write(false);
         for (;;) {
-            while (!read_resp_fifo.nb_read(read_resp)) wait();
-            for (int i = 0, delay = rd_valid_delay.rand(); i < delay; i++) wait();
+            while (!read_resp_fifo.nb_read(read_resp))
+                wait();
+            for (int i = 0, delay = rd_valid_delay.rand(); i < delay; i++)
+                wait();
             sb_mem_read_resp_o.write(read_resp); // send response to scoreboard
             mem_resp_read_valid_o.write(true);
             mem_resp_read_error_o.write(read_resp.error);
             mem_resp_read_id_o.write(read_resp.id);
             mem_resp_read_data_o.write(read_resp.data);
             mem_resp_read_last_o.write(read_resp.last);
-            do wait();
+            do
+                wait();
             while (!mem_resp_read_ready_i.read());
             mem_resp_read_valid_o.write(false);
         }
@@ -341,14 +352,17 @@ private:
 
         mem_resp_write_valid_o.write(false);
         for (;;) {
-            while (!write_resp_fifo.nb_read(resp)) wait();
-            for (int i = 0, delay = wb_valid_delay.rand(); i < delay; i++) wait();
+            while (!write_resp_fifo.nb_read(resp))
+                wait();
+            for (int i = 0, delay = wb_valid_delay.rand(); i < delay; i++)
+                wait();
             sb_mem_write_resp_o.write(resp); // send response to scoreboard
             mem_resp_write_valid_o.write(true);
             mem_resp_write_is_atomic_o.write(resp.is_atomic);
             mem_resp_write_error_o.write(resp.error);
             mem_resp_write_id_o.write(resp.id);
-            do wait();
+            do
+                wait();
             while (!mem_resp_write_ready_i.read());
             mem_resp_write_valid_o.write(false);
         }
@@ -376,10 +390,12 @@ private:
             mem_req_write_ready_o.write(false);
 
             //  Wait for a write request
-            while (!mem_req_write_valid_i.read()) wait();
+            while (!mem_req_write_valid_i.read())
+                wait();
 
             //  Wait for a random delay before setting the ready signal
-            for (int i = 0, delay = wa_ready_delay.rand(); i < delay; ++i) wait();
+            for (int i = 0, delay = wa_ready_delay.rand(); i < delay; ++i)
+                wait();
 
             //  Set the ready signal
             mem_req_write_ready_o.write(true);
@@ -392,7 +408,8 @@ private:
             r.command = mem_req_write_command_i.read().to_uint();
             r.atomic = mem_req_write_atomic_i.read().to_uint();
             r.cacheable = mem_req_write_cacheable_i.read();
-            while (!write_req_fifo.nb_write(r)) wait();
+            while (!write_req_fifo.nb_write(r))
+                wait();
 
             wait();
         }
@@ -408,10 +425,12 @@ private:
             mem_req_write_data_ready_o.write(false);
 
             //  Wait for a data beat
-            while (!mem_req_write_data_valid_i.read()) wait();
+            while (!mem_req_write_data_valid_i.read())
+                wait();
 
             //  Wait for a random delay before setting the ready signal
-            for (int i = 0, delay = wd_ready_delay.rand(); i < delay; ++i) wait();
+            for (int i = 0, delay = wd_ready_delay.rand(); i < delay; ++i)
+                wait();
 
             //  Set the ready signal
             mem_req_write_data_ready_o.write(true);
@@ -419,7 +438,8 @@ private:
             r.data = mem_req_write_data_i.read();
             r.be = mem_req_write_be_i.read();
             r.last = mem_req_write_last_i.read();
-            while (!write_req_data_fifo.nb_write(r)) wait();
+            while (!write_req_data_fifo.nb_write(r))
+                wait();
 
             wait();
         }
@@ -432,8 +452,10 @@ private:
         hpdcache_test_transaction_mem_write_req req;
 
         for (;;) {
-            while (!write_req_fifo.nb_read(req_meta)) wait();
-            while (!write_req_data_fifo.nb_read(req_data)) wait();
+            while (!write_req_fifo.nb_read(req_meta))
+                wait();
+            while (!write_req_data_fifo.nb_read(req_data))
+                wait();
             wait();
 
             if (req_meta.len != 0) {

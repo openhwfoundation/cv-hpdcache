@@ -16,24 +16,22 @@
 #include <utility>
 #include <vector>
 
-template<typename enum_type, class rand_gen = std::default_random_engine>
+template <typename enum_type, class rand_gen = std::default_random_engine>
 class hpdcache_test_enum_distribution
 {
-private:
+  private:
     std::vector<enum_type> values;
     std::vector<int> weights;
-    std::discrete_distribution<int>* dist;
+    std::discrete_distribution<int> *dist;
     rand_gen rg;
 
-public:
-    hpdcache_test_enum_distribution()
-      : dist(nullptr)
-    {
-    }
+  public:
+    hpdcache_test_enum_distribution() : dist(nullptr) {}
 
     ~hpdcache_test_enum_distribution()
     {
-        if (dist) delete dist;
+        if (dist)
+            delete dist;
         dist = nullptr;
     }
 
@@ -51,7 +49,8 @@ public:
 
     enum_type rand()
     {
-        if (dist) return values[(*dist)(rg)];
+        if (dist)
+            return values[(*dist)(rg)];
         return static_cast<enum_type>(0);
     }
 };

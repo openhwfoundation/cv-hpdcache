@@ -12,24 +12,26 @@
 #ifndef __HPDCACHE_FAULT_INJECTION_H__
 #define __HPDCACHE_FAULT_INJECTION_H__
 
+#include <verilated.h>
+
+#include <sstream>
+
 #include "Vhpdcache_wrapper.h"
 #include "hpdcache_test_defs.h"
 #include "svdpi.h"
-#include <sstream>
-#include <verilated.h>
 
 using namespace sc_dt;
 
 class hpdcache_fault_injection
 {
-public:
+  public:
     enum class domain_e : int
     {
         CACHE_DIR = 0,
         CACHE_DAT = 1
     };
 
-private:
+  private:
     static constexpr int DATA_ROWS = CONF_HPDCACHE_WAYS / CONF_HPDCACHE_DATA_WAYS_PER_RAM_WORD;
     static constexpr int DATA_COLS = CONF_HPDCACHE_ACCESS_WORDS;
 
@@ -47,7 +49,8 @@ private:
 
     static inline constexpr int getParBits(int wordWidth)
     {
-        if (wordWidth < 64) return 7;
+        if (wordWidth < 64)
+            return 7;
         return 8;
     }
 
@@ -57,30 +60,29 @@ private:
 #if HPDCACHE_DPI_ON
         int x, y;
         switch (domain) {
-            case domain_e::CACHE_DIR:
-                x = getDir(way);
-                ret = dirScopes[x];
-                break;
-            case domain_e::CACHE_DAT:
-                x = getDatRow(way);
-                y = getDatCol(word);
-                ret = datScopes[x][y];
-                break;
-            default:
-                break;
+        case domain_e::CACHE_DIR:
+            x = getDir(way);
+            ret = dirScopes[x];
+            break;
+        case domain_e::CACHE_DAT:
+            x = getDatRow(way);
+            y = getDatCol(word);
+            ret = datScopes[x][y];
+            break;
+        default:
+            break;
         }
 #endif
         return ret;
     }
 
-public:
+  public:
     hpdcache_fault_injection()
     {
 #if HPDCACHE_DPI_ON
         for (int w = 0; w < CONF_HPDCACHE_WAYS; w++) {
             char hier_name[256];
-            snprintf(hier_name,
-                     256,
+            snprintf(hier_name, 256,
                      "i_top.hpdcache_wrapper.i_hpdcache"
                      ".hpdcache_ctrl_i.hpdcache_memctrl_i"
                      ".gen_dir_sram[%d].dir_sram.gen_sram_ecc"
@@ -94,15 +96,13 @@ public:
         for (int w = 0; w < CONF_HPDCACHE_WAYS / CONF_HPDCACHE_DATA_WAYS_PER_RAM_WORD; w++) {
             for (int m = 0; m < CONF_HPDCACHE_ACCESS_WORDS; m++) {
                 char hier_name[256];
-                snprintf(hier_name,
-                         256,
+                snprintf(hier_name, 256,
                          "i_top.hpdcache_wrapper.i_hpdcache"
                          ".hpdcache_ctrl_i.hpdcache_memctrl_i"
                          ".gen_data_sram_row[%d]"
                          ".gen_data_sram_col[%d]"
                          ".data_sram.gen_sram_ecc.ram_i.i_sram",
-                         w,
-                         m);
+                         w, m);
                 svScope scope = svGetScopeFromName(hier_name);
                 assert(scope != nullptr);
                 datScopes[w][m] = scope;

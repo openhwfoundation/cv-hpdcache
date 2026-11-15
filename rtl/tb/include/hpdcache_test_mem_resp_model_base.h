@@ -26,17 +26,18 @@
 #ifndef __HPDCACHE_TEST_MEM_RESP_MODEL_BASE_H__
 #define __HPDCACHE_TEST_MEM_RESP_MODEL_BASE_H__
 
-#include "hpdcache_test_defs.h"
-#include "hpdcache_test_range_distribution.h"
-#include "logger.h"
-#include "mem_model.h"
 #include <iostream>
 #include <map>
 #include <systemc>
 
+#include "hpdcache_test_defs.h"
+#include "hpdcache_test_range_distribution.h"
+#include "logger.h"
+#include "mem_model.h"
+
 class hpdcache_test_mem_resp_model_base
 {
-public:
+  public:
     struct segment_t
     {
         uint64_t base_addr;
@@ -44,9 +45,7 @@ public:
         bool error;
 
         segment_t(uint64_t base, uint64_t end, bool error)
-          : base_addr(base)
-          , end_addr(end)
-          , error(error) {};
+            : base_addr(base), end_addr(end), error(error){};
     };
 
     struct excl_reservation_buf_t
@@ -60,10 +59,10 @@ public:
     using hpdcache_mem_command_e = hpdcache_test_transaction_mem_req::hpdcache_mem_command_e;
     using delay_distribution_t = hpdcache_test_range_distribution<int>;
 
-protected:
+  protected:
     class mem_write_req_flit_t
     {
-    public:
+      public:
         uint64_t addr;
         uint32_t len;
         uint32_t size;
@@ -81,7 +80,7 @@ protected:
             return os.str();
         }
 
-        friend std::ostream& operator<<(std::ostream& os, const mem_write_req_flit_t& r)
+        friend std::ostream &operator<<(std::ostream &os, const mem_write_req_flit_t &r)
         {
             os << r.to_string();
             return os;
@@ -90,7 +89,7 @@ protected:
 
     class mem_write_req_data_flit_t
     {
-    public:
+      public:
         sc_bv<HPDCACHE_MEM_DATA_WIDTH> data;
         sc_bv<HPDCACHE_MEM_DATA_WIDTH / 8> be;
         bool last;
@@ -104,7 +103,7 @@ protected:
             return os.str();
         }
 
-        friend std::ostream& operator<<(std::ostream& os, const mem_write_req_data_flit_t& r)
+        friend std::ostream &operator<<(std::ostream &os, const mem_write_req_data_flit_t &r)
         {
             os << r.to_string();
             return os;
@@ -117,7 +116,7 @@ protected:
     sc_fifo<hpdcache_test_transaction_mem_write_resp> write_resp_fifo;
 
     std::vector<segment_t> errorsegs;
-    mem_model* memory_m;
+    mem_model *memory_m;
     excl_reservation_buf_t excl_buf_m[1 << HPDCACHE_MEM_ID_WIDTH];
 
     delay_distribution_t ra_ready_delay;
@@ -133,10 +132,8 @@ protected:
         return (sc_core::sc_report_handler::get_verbosity_level() >= verbosity);
     }
 
-public:
-    hpdcache_test_mem_resp_model_base(const std::string& nm)
-      : read_resp_fifo(2)
-      , write_resp_fifo(2)
+  public:
+    hpdcache_test_mem_resp_model_base(const std::string &nm) : read_resp_fifo(2), write_resp_fifo(2)
     {
         std::string mem_model_name;
         mem_model_name = mem_model_name + "_" + nm;
@@ -166,9 +163,9 @@ public:
 
     ~hpdcache_test_mem_resp_model_base() { delete memory_m; }
 
-    void add_error_segment(const segment_t& s) { errorsegs.push_back(s); }
+    void add_error_segment(const segment_t &s) { errorsegs.push_back(s); }
 
-    void set_ra_ready_delay_distribution(const delay_distribution_t& dist)
+    void set_ra_ready_delay_distribution(const delay_distribution_t &dist)
     {
         ra_ready_delay = dist;
     }
@@ -179,7 +176,7 @@ public:
         ra_ready_delay.add_value_weight(delay, delay, 1);
     }
 
-    void set_rd_valid_delay_distribution(const delay_distribution_t& dist)
+    void set_rd_valid_delay_distribution(const delay_distribution_t &dist)
     {
         rd_valid_delay = dist;
     }
@@ -190,31 +187,33 @@ public:
         rd_valid_delay.add_value_weight(delay, delay, 1);
     }
 
-    void set_wa_ready_delay_distribution(const delay_distribution_t& dist)
+    void set_wa_ready_delay_distribution(const delay_distribution_t &dist)
     {
         wa_ready_delay = dist;
     }
 
-    void set_wd_ready_delay_distribution(const delay_distribution_t& dist)
+    void set_wd_ready_delay_distribution(const delay_distribution_t &dist)
     {
         wd_ready_delay = dist;
     }
 
-    void set_wb_valid_delay_distribution(const delay_distribution_t& dist)
+    void set_wb_valid_delay_distribution(const delay_distribution_t &dist)
     {
         wb_valid_delay = dist;
     }
 
     bool within_region(uint64_t base0, uint64_t end0, uint64_t base1, uint64_t end1)
     {
-        if (end0 <= base1) return false;
-        if (base0 >= end1) return false;
+        if (end0 <= base1)
+            return false;
+        if (base0 >= end1)
+            return false;
         return true;
     }
 
     bool within_error_region(uint64_t base, uint64_t end)
     {
-        for (const segment_t& s : errorsegs) {
+        for (const segment_t &s : errorsegs) {
             if (within_region(s.base_addr, s.end_addr, base, end)) {
                 return s.error;
             }
@@ -223,9 +222,7 @@ public:
     }
 
     uint64_t compute_amo(hpdcache_test_transaction_mem_req::hpdcache_mem_atomic_e atop,
-                         uint64_t ld_data,
-                         uint64_t st_data,
-                         unsigned bytes)
+                         uint64_t ld_data, uint64_t st_data, unsigned bytes)
     {
         bool umax = (ld_data > st_data);
         bool smax;
@@ -236,24 +233,24 @@ public:
         }
 
         switch (atop) {
-            case hpdcache_mem_atomic_e::HPDCACHE_MEM_ATOMIC_ADD:
-                return ld_data + st_data;
-            case hpdcache_mem_atomic_e::HPDCACHE_MEM_ATOMIC_CLR:
-                return ld_data & ~st_data;
-            case hpdcache_mem_atomic_e::HPDCACHE_MEM_ATOMIC_SET:
-                return ld_data | st_data;
-            case hpdcache_mem_atomic_e::HPDCACHE_MEM_ATOMIC_EOR:
-                return ld_data ^ st_data;
-            case hpdcache_mem_atomic_e::HPDCACHE_MEM_ATOMIC_SMAX:
-                return smax ? ld_data : st_data;
-            case hpdcache_mem_atomic_e::HPDCACHE_MEM_ATOMIC_UMAX:
-                return umax ? ld_data : st_data;
-            case hpdcache_mem_atomic_e::HPDCACHE_MEM_ATOMIC_SMIN:
-                return smax ? st_data : ld_data;
-            case hpdcache_mem_atomic_e::HPDCACHE_MEM_ATOMIC_UMIN:
-                return umax ? st_data : ld_data;
-            case hpdcache_mem_atomic_e::HPDCACHE_MEM_ATOMIC_SWAP:
-                return st_data;
+        case hpdcache_mem_atomic_e::HPDCACHE_MEM_ATOMIC_ADD:
+            return ld_data + st_data;
+        case hpdcache_mem_atomic_e::HPDCACHE_MEM_ATOMIC_CLR:
+            return ld_data & ~st_data;
+        case hpdcache_mem_atomic_e::HPDCACHE_MEM_ATOMIC_SET:
+            return ld_data | st_data;
+        case hpdcache_mem_atomic_e::HPDCACHE_MEM_ATOMIC_EOR:
+            return ld_data ^ st_data;
+        case hpdcache_mem_atomic_e::HPDCACHE_MEM_ATOMIC_SMAX:
+            return smax ? ld_data : st_data;
+        case hpdcache_mem_atomic_e::HPDCACHE_MEM_ATOMIC_UMAX:
+            return umax ? ld_data : st_data;
+        case hpdcache_mem_atomic_e::HPDCACHE_MEM_ATOMIC_SMIN:
+            return smax ? st_data : ld_data;
+        case hpdcache_mem_atomic_e::HPDCACHE_MEM_ATOMIC_UMIN:
+            return umax ? st_data : ld_data;
+        case hpdcache_mem_atomic_e::HPDCACHE_MEM_ATOMIC_SWAP:
+            return st_data;
         }
 
         sc_assert(false && "unknown atomic operation");

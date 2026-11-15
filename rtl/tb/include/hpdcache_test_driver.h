@@ -18,17 +18,19 @@
 #if CONF_HPDCACHE_TEST_FAULT_INJ
 #include "hpdcache_fault_injection.h"
 #endif
-#include "logger.h"
+#include <verilated.h>
+
 #include <string>
 #include <systemc>
-#include <verilated.h>
+
+#include "logger.h"
 
 using namespace sc_core;
 using namespace sc_dt;
 
 class hpdcache_test_driver : public Driver
 {
-public:
+  public:
     sc_out<bool> core_req_valid_o;
     sc_in<bool> core_req_ready_i;
     sc_out<sc_bv<HPDCACHE_CORE_REQ_WIDTH>> core_req_o;
@@ -43,8 +45,7 @@ public:
     sc_fifo_out<hpdcache_test_transaction_req> sb_core_req_o;
     sc_fifo_out<hpdcache_test_transaction_resp> sb_core_resp_o;
 
-    hpdcache_test_driver(sc_core::sc_module_name nm)
-      : Driver(nm)
+    hpdcache_test_driver(sc_core::sc_module_name nm) : Driver(nm)
     {
         SC_THREAD(drive_request);
         sensitive << clk_i.pos();
@@ -53,7 +54,7 @@ public:
         sensitive << clk_i.neg();
     };
 
-private:
+  private:
 #if SC_VERSION_MAJOR < 3
     SC_HAS_PROCESS(hpdcache_test_driver);
 #endif
@@ -62,25 +63,30 @@ private:
 
     typedef std::shared_ptr<hpdcache_test_transaction_req> transaction_ptr;
 
-    static inline uint64_t core_get_req_tag(const transaction_ptr& t)
+    static inline uint64_t core_get_req_tag(const transaction_ptr &t)
     {
         sc_bv<HPDCACHE_TAG_WIDTH> ret;
         ret = t->req_addr.range(HPDCACHE_PA_WIDTH - 1, HPDCACHE_ADDR_OFFSET_WIDTH);
         return ret.to_uint64();
     }
 
-    static inline uint32_t core_get_req_pma(const transaction_ptr& t)
+    static inline uint32_t core_get_req_pma(const transaction_ptr &t)
     {
         int ret = 0;
-        if (t->is_wr_policy_auto()) ret |= (0x1 << 0);
-        if (t->is_wr_policy_wb()) ret |= (0x1 << 1);
-        if (t->is_wr_policy_wt()) ret |= (0x1 << 2);
-        if (t->req_io) ret |= (0x1 << 3);
-        if (t->req_uncacheable) ret |= (0x1 << 4);
+        if (t->is_wr_policy_auto())
+            ret |= (0x1 << 0);
+        if (t->is_wr_policy_wb())
+            ret |= (0x1 << 1);
+        if (t->is_wr_policy_wt())
+            ret |= (0x1 << 2);
+        if (t->req_io)
+            ret |= (0x1 << 3);
+        if (t->req_uncacheable)
+            ret |= (0x1 << 4);
         return ret;
     }
 
-    static sc_bv<HPDCACHE_CORE_REQ_WIDTH> core_req_to_bv(const transaction_ptr& t)
+    static sc_bv<HPDCACHE_CORE_REQ_WIDTH> core_req_to_bv(const transaction_ptr &t)
     {
         const int unsigned PMA_POS = 0;
         const int unsigned TAG_POS = PMA_POS + HPDCACHE_REQ_PMA_WIDTH;
@@ -113,8 +119,8 @@ private:
         return ret;
     }
 
-    static void core_resp_to_struct(hpdcache_test_transaction_resp& resp,
-                                    const sc_bv<HPDCACHE_CORE_RSP_WIDTH>& bv)
+    static void core_resp_to_struct(hpdcache_test_transaction_resp &resp,
+                                    const sc_bv<HPDCACHE_CORE_RSP_WIDTH> &bv)
     {
         const int unsigned ABORTED_POS = 0;
         const int unsigned ERROR_POS = ABORTED_POS + HPDCACHE_RSP_ABORTED_WIDTH;
@@ -137,29 +143,28 @@ private:
         for (;;) {
             t = std::dynamic_pointer_cast<hpdcache_test_transaction_req>(transaction_fifo_i.read());
 
-            if (t == nullptr) break;
+            if (t == nullptr)
+                break;
 
             if (t->req_fault.valid) {
                 switch (t->req_fault.domain) {
-                    case hpdcache_fault_injection::domain_e::CACHE_DIR:
-                        faultInj.injectDirFault(t->req_fault.set,
-                                                t->req_fault.way,
-                                                t->req_fault.fault_mask.range(63, 0));
-                        break;
-                    case hpdcache_fault_injection::domain_e::CACHE_DAT:
-                        faultInj.injectDatFault(t->req_fault.set,
-                                                t->req_fault.way,
-                                                t->req_fault.word,
-                                                t->req_fault.fault_mask.range(71, 0));
-                        break;
-                    default:
-                        break;
+                case hpdcache_fault_injection::domain_e::CACHE_DIR:
+                    faultInj.injectDirFault(t->req_fault.set, t->req_fault.way,
+                                            t->req_fault.fault_mask.range(63, 0));
+                    break;
+                case hpdcache_fault_injection::domain_e::CACHE_DAT:
+                    faultInj.injectDatFault(t->req_fault.set, t->req_fault.way, t->req_fault.word,
+                                            t->req_fault.fault_mask.range(71, 0));
+                    break;
+                default:
+                    break;
                 }
             }
 
             core_req_valid_o.write(true);
             core_req_o.write(core_req_to_bv(t));
-            do wait();
+            do
+                wait();
             while (!core_req_ready_i.read());
             core_req_valid_o.write(false);
 
@@ -187,7 +192,6 @@ private:
     void drive_tag()
     {
         for (;;) {
-
             wait();
         }
     }

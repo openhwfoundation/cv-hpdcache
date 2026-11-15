@@ -30,13 +30,10 @@
 
 class GenericCacheData
 {
-public:
-    GenericCacheData(const std::string& name, size_t nways, size_t nsets, size_t nwords)
-      : name_m(name)
-      , data_m(nways * nsets * nwords, 0)
-      , ways_m(nways)
-      , sets_m(nsets)
-      , words_m(nwords)
+  public:
+    GenericCacheData(const std::string &name, size_t nways, size_t nsets, size_t nwords)
+        : name_m(name), data_m(nways * nsets * nwords, 0), ways_m(nways), sets_m(nsets),
+          words_m(nwords)
     {
         sc_assert(nsets > 0);
         sc_assert(nways > 0);
@@ -81,7 +78,7 @@ public:
         return ret;
     }
 
-protected:
+  protected:
     std::string name_m;
     std::vector<uint64_t> data_m;
 
@@ -89,7 +86,7 @@ protected:
     size_t sets_m;
     size_t words_m;
 
-    inline uint64_t& getCacheData(size_t way, size_t set, size_t word)
+    inline uint64_t &getCacheData(size_t way, size_t set, size_t word)
     {
         return data_m[way * (sets_m * words_m) + (set * words_m) + word];
     }

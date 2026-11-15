@@ -30,10 +30,10 @@
 
 class Logger
 {
-private:
+  private:
     static int log_level;
 
-public:
+  public:
     enum
     {
         LOG_NONE = 0,
@@ -60,19 +60,22 @@ public:
 
     static int is_debug_enabled() { return log_level >= LOG_DEBUG; }
 
-    static void info(const std::string& msg)
+    static void info(const std::string &msg)
     {
-        if (log_level >= LOG_INFO) std::cout << msg;
+        if (log_level >= LOG_INFO)
+            std::cout << msg;
     }
 
-    static void warning(const std::string& msg)
+    static void warning(const std::string &msg)
     {
-        if (log_level >= LOG_WARNING) std::cout << msg;
+        if (log_level >= LOG_WARNING)
+            std::cout << msg;
     }
 
-    static void debug(const std::string& msg)
+    static void debug(const std::string &msg)
     {
-        if (log_level >= LOG_DEBUG) std::cout << msg;
+        if (log_level >= LOG_DEBUG)
+            std::cout << msg;
     }
 };
 

@@ -10,16 +10,16 @@
 #include <utility>
 #include <vector>
 
-template<typename value_type, class rand_gen = std::default_random_engine>
+template <typename value_type, class rand_gen = std::default_random_engine>
 class hpdcache_test_range_distribution
 {
-private:
+  private:
     std::vector<std::pair<value_type, value_type>> values;
     std::vector<int> weights;
     std::discrete_distribution<size_t> selection;
     rand_gen rg;
 
-public:
+  public:
     void add_value_weight(value_type min, value_type max, int weight)
     {
         values.emplace_back(min, max);
@@ -29,7 +29,7 @@ public:
 
     value_type rand()
     {
-        const auto& range = values[selection(rg)];
+        const auto &range = values[selection(rg)];
         return std::uniform_int_distribution<value_type>(range.first, range.second)(rg);
     }
 };

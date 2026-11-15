@@ -26,18 +26,18 @@
 #ifndef __HPDCACHE_TEST_READ_SEQ_H__
 #define __HPDCACHE_TEST_READ_SEQ_H__
 
+#include <random>
+#include <systemc>
+
 #include "hpdcache_test_defs.h"
 #include "hpdcache_test_mem_resp_model_base.h"
 #include "hpdcache_test_range_distribution.h"
 #include "hpdcache_test_sequence.h"
-#include <random>
-#include <systemc>
 
 class hpdcache_test_read_seq : public hpdcache_test_sequence
 {
-public:
-    hpdcache_test_read_seq(sc_core::sc_module_name nm)
-      : hpdcache_test_sequence(nm, "read_seq")
+  public:
+    hpdcache_test_read_seq(sc_core::sc_module_name nm) : hpdcache_test_sequence(nm, "read_seq")
     {
         SC_THREAD(run);
         sensitive << clk_i.pos();
@@ -47,10 +47,10 @@ public:
         seg.set_uncached(false);
     }
 
-private:
+  private:
     hpdcache_test_sequence::hpdcache_test_memory_segment seg;
     std::default_random_engine rg;
-    std::uniform_int_distribution<uint32_t> size_dist{ 0, 3 };
+    std::uniform_int_distribution<uint32_t> size_dist{0, 3};
     std::uniform_int_distribution<uint64_t> addr_dist;
     const unsigned int HPDCACHE_REQ_DATA_BYTES = HPDCACHE_REQ_DATA_WIDTH / 8;
 
@@ -81,7 +81,8 @@ private:
     {
         std::shared_ptr<hpdcache_test_transaction_req> t;
 
-        while (!is_available_id()) wait();
+        while (!is_available_id())
+            wait();
 
         t = acquire_transaction<hpdcache_test_transaction_req>();
         t->req_op = hpdcache_test_transaction_req::HPDCACHE_REQ_LOAD;
@@ -110,7 +111,8 @@ private:
 
     void run()
     {
-        while (rst_ni == 0) wait();
+        while (rst_ni == 0)
+            wait();
 
         std::shared_ptr<hpdcache_test_mem_resp_model_base> mem_resp_model =
             this->get_mem_resp_model();

@@ -9,7 +9,7 @@
 
 class hpdcache_test_wbuf_threshold_seq : public hpdcache_test_sequence
 {
-public:
+  public:
     sc_core::sc_in<bool> wbuf_empty_i;
     sc_core::sc_in<bool> mem_req_write_valid_i;
     sc_core::sc_in<bool> mem_req_write_ready_i;
@@ -17,9 +17,8 @@ public:
     sc_core::sc_in<bool> mem_resp_write_ready_i;
 
     hpdcache_test_wbuf_threshold_seq(sc_core::sc_module_name nm,
-                                     sc_core::sc_signal<sc_bv<3>>& threshold)
-      : hpdcache_test_sequence(nm, "wbuf_threshold_seq")
-      , threshold(threshold)
+                                     sc_core::sc_signal<sc_bv<3>> &threshold)
+        : hpdcache_test_sequence(nm, "wbuf_threshold_seq"), threshold(threshold)
     {
         SC_THREAD(run);
         sensitive << clk_i.pos();
@@ -27,9 +26,9 @@ public:
         sensitive << clk_i.pos();
     }
 
-private:
+  private:
     using T = hpdcache_test_transaction_req;
-    sc_core::sc_signal<sc_bv<3>>& threshold;
+    sc_core::sc_signal<sc_bv<3>> &threshold;
     unsigned int write_requests = 0;
     unsigned int write_acks = 0;
 
@@ -39,9 +38,12 @@ private:
 
     void monitor()
     {
-        if (!rst_ni.read()) return;
-        if (mem_req_write_valid_i.read() && mem_req_write_ready_i.read()) write_requests++;
-        if (mem_resp_write_valid_i.read() && mem_resp_write_ready_i.read()) write_acks++;
+        if (!rst_ni.read())
+            return;
+        if (mem_req_write_valid_i.read() && mem_req_write_ready_i.read())
+            write_requests++;
+        if (mem_resp_write_valid_i.read() && mem_resp_write_ready_i.read())
+            write_acks++;
     }
 
     void send(T::hpdcache_req_op_e op)
@@ -57,7 +59,8 @@ private:
         t->req_need_rsp = true;
         t->req_wr_policy_hint = T::HPDCACHE_WR_POLICY_WT;
         send_transaction(t, 0);
-        while (ids_size()) wait();
+        while (ids_size())
+            wait();
         wait();
     }
 
@@ -73,9 +76,10 @@ private:
         }
 
         threshold.write(new_threshold);
-        for (unsigned int i = 0; i < 1000; i++) wait();
-        bool drained = wbuf_empty_i.read() && write_requests == requests_before + 1
-                       && write_acks == acks_before + 1;
+        for (unsigned int i = 0; i < 1000; i++)
+            wait();
+        bool drained = wbuf_empty_i.read() && write_requests == requests_before + 1 &&
+                       write_acks == acks_before + 1;
         std::cout << (drained ? "wbuf_threshold: " : "SEQ_ERROR: wbuf_threshold: ")
                   << initial_threshold << " -> " << new_threshold
                   << " empty=" << wbuf_empty_i.read()
@@ -89,7 +93,8 @@ private:
 
     void run()
     {
-        while (rst_ni == 0) wait();
+        while (rst_ni == 0)
+            wait();
         hpdcache_test_range_distribution<int> no_delay;
         no_delay.add_value_weight(0, 0, 1);
         auto mem = get_mem_resp_model();

@@ -26,28 +26,27 @@
 #ifndef __HPDCACHE_TEST_SEQUENCE_H__
 #define __HPDCACHE_TEST_SEQUENCE_H__
 
+#include <systemc>
+
 #include "hpdcache_test_defs.h"
 #include "hpdcache_test_mem_resp_model_base.h"
 #include "hpdcache_test_transaction.h"
 #include "sequence.h"
-#include <systemc>
 
 class hpdcache_test_sequence : public Sequence
 {
     const int HPDCACHE_REQ_MAX_TRANS_ID = 1 << HPDCACHE_REQ_TRANS_ID_WIDTH;
 
-public:
+  public:
     hpdcache_test_sequence(sc_core::sc_module_name nm, std::string seq_name)
-      : Sequence(nm)
-      , name(seq_name)
-      , max_transactions(100)
+        : Sequence(nm), name(seq_name), max_transactions(100)
     {
         std::cout << "Building " << nm << std::endl;
     }
 
     class hpdcache_test_memory_segment
     {
-    public:
+      public:
         enum wr_policy_e
         {
             WR_POLICY_AUTO = 0,
@@ -56,20 +55,17 @@ public:
             WR_POLICY_RANDOM = 3
         };
 
-    private:
+      private:
         sc_bv<HPDCACHE_PA_WIDTH> base;
         sc_bv<HPDCACHE_PA_WIDTH> length;
         bool uncached;
         bool amo_supported;
         wr_policy_e wr_policy_hint;
 
-    public:
+      public:
         hpdcache_test_memory_segment()
-          : base(0)
-          , length(0)
-          , uncached(false)
-          , amo_supported(false)
-          , wr_policy_hint(WR_POLICY_AUTO)
+            : base(0), length(0), uncached(false), amo_supported(false),
+              wr_policy_hint(WR_POLICY_AUTO)
         { /* empty */
         }
 
@@ -139,7 +135,7 @@ public:
 
     std::list<unsigned int>::const_iterator ids_cend() { return ids.cend(); }
 
-    const std::list<unsigned int>& get_ids() { return ids; }
+    const std::list<unsigned int> &get_ids() { return ids; }
 
     size_t ids_size() { return ids.size(); }
 
@@ -168,7 +164,8 @@ public:
         // release the previously used transaction object
         release_transaction<hpdcache_test_transaction_req>(t);
         // add some delay between two consecutive commands
-        for (int i = 0; i < delay; i++) wait();
+        for (int i = 0; i < delay; i++)
+            wait();
     }
 
     const std::string to_string() const
@@ -178,13 +175,13 @@ public:
         return os.str();
     }
 
-    friend std::ostream& operator<<(std::ostream& os, const hpdcache_test_sequence& seq)
+    friend std::ostream &operator<<(std::ostream &os, const hpdcache_test_sequence &seq)
     {
         os << seq.to_string();
         return os;
     }
 
-protected:
+  protected:
     std::list<unsigned int> ids;
     std::string name;
     size_t max_transactions;

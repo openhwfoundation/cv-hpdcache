@@ -42,11 +42,11 @@ extern "C"
 
 class trace_reader
 {
-private:
+  private:
     bool bool_finish = false;
-    mz_stream* stream = nullptr;
+    mz_stream *stream = nullptr;
 
-public:
+  public:
     int trace_descriptor;
     char buf[MAX_SIZE_BUFFER * 20]; // x20 -> maximum size after decompression
     int end_buffer;
@@ -107,7 +107,7 @@ public:
      */
     void init_stream()
     {
-        stream = (mz_stream*)calloc(1, sizeof(mz_stream));
+        stream = (mz_stream *)calloc(1, sizeof(mz_stream));
         if (!stream) {
             Logger::warning("Error on allocation of memory for the stream\n");
             exit(1);
@@ -125,8 +125,8 @@ public:
     void decompress_data_from_trace()
     {
         int ret;
-        unsigned char* in_buffer = (unsigned char*)calloc(1, MAX_SIZE_BUFFER);
-        unsigned char* out_buffer = (unsigned char*)calloc(1, MAX_SIZE_BUFFER);
+        unsigned char *in_buffer = (unsigned char *)calloc(1, MAX_SIZE_BUFFER);
+        unsigned char *out_buffer = (unsigned char *)calloc(1, MAX_SIZE_BUFFER);
 
         if (!in_buffer || !out_buffer) {
             Logger::warning("Error on allocation of memory");
@@ -185,7 +185,7 @@ public:
      *
      * @param size The number of bytes to read
      */
-    void get_content_of_trace(void* ptr, int size)
+    void get_content_of_trace(void *ptr, int size)
     {
         if (size == 0) {
             return;
@@ -209,9 +209,9 @@ public:
             }
             */
         }
-        *((char*)ptr) = buf[read_buffer];
+        *((char *)ptr) = buf[read_buffer];
         read_buffer++;
-        get_content_of_trace((char*)ptr + 1, size - 1);
+        get_content_of_trace((char *)ptr + 1, size - 1);
     }
 
     /**
@@ -230,17 +230,17 @@ public:
     {
         char result = 0;
         get_content_of_trace(&result, sizeof(char));
-        return *((unsigned*)&result);
+        return *((unsigned *)&result);
     }
 
-    inline unsigned read_size(uint8_t* size_value)
+    inline unsigned read_size(uint8_t *size_value)
     {
         char result = 0;
         get_content_of_trace(&result, sizeof(char));
         *size_value = result >> 4;
         result <<= 4;
         result >>= 4;
-        return *((unsigned*)&result);
+        return *((unsigned *)&result);
     }
 
     /**
@@ -282,7 +282,7 @@ public:
     inline int is_big_endian()
     {
         int i = 1;
-        return !*((char*)&i);
+        return !*((char *)&i);
     }
 
     uint64_t get_address(uint8_t size, uint64_t address_on_real_computer)
@@ -303,36 +303,36 @@ public:
                     uint8_t size_value_store)
     {
         switch (size_value_store) {
-            case 0:
-                uint8_t result8;
-                get_content_of_trace(&(result8), sizeof(uint8_t));
-                transaction->req_wdata = result8;
-                break;
-            case 1:
-                uint16_t result16;
-                get_content_of_trace(&(result16), sizeof(uint16_t));
-                transaction->req_wdata = result16;
-                break;
-            case 2:
-                uint32_t result32;
-                get_content_of_trace(&(result32), sizeof(uint32_t));
-                transaction->req_wdata = result32;
-                break;
-            case 3:
-                uint64_t result64;
-                get_content_of_trace(&(result64), sizeof(uint64_t));
-                transaction->req_wdata = result64;
-                break;
-            case 4:
-                uint64_t result128;
-                get_content_of_trace(&(result128), sizeof(uint64_t));
-                transaction->req_wdata = result128;
-                break;
+        case 0:
+            uint8_t result8;
+            get_content_of_trace(&(result8), sizeof(uint8_t));
+            transaction->req_wdata = result8;
+            break;
+        case 1:
+            uint16_t result16;
+            get_content_of_trace(&(result16), sizeof(uint16_t));
+            transaction->req_wdata = result16;
+            break;
+        case 2:
+            uint32_t result32;
+            get_content_of_trace(&(result32), sizeof(uint32_t));
+            transaction->req_wdata = result32;
+            break;
+        case 3:
+            uint64_t result64;
+            get_content_of_trace(&(result64), sizeof(uint64_t));
+            transaction->req_wdata = result64;
+            break;
+        case 4:
+            uint64_t result128;
+            get_content_of_trace(&(result128), sizeof(uint64_t));
+            transaction->req_wdata = result128;
+            break;
         }
         return;
     }
 
-    void read_delay(uint8_t* delay) { get_content_of_trace(delay, sizeof(uint8_t)); }
+    void read_delay(uint8_t *delay) { get_content_of_trace(delay, sizeof(uint8_t)); }
 
     /**
      * @brief Read a transaction in a binary trace
@@ -367,29 +367,29 @@ public:
  */
 class trace_writer
 {
-private:
-    std::ofstream* trace;
+  private:
+    std::ofstream *trace;
     static std::mutex mutex_;
-    static trace_writer* is_instance;
+    static trace_writer *is_instance;
 
-public:
+  public:
     void write_address(std::shared_ptr<hpdcache_test_transaction_req> t)
     {
         uint64_t address_64 = t->req_addr.to_uint64();
-        trace->write((char*)(&(address_64)), sizeof(uint64_t));
+        trace->write((char *)(&(address_64)), sizeof(uint64_t));
         return;
     }
 
     void write_type_transaction(std::shared_ptr<hpdcache_test_transaction_req> t)
     {
         unsigned op = t->req_op.to_uint();
-        trace->write((char*)(&op), 1);
+        trace->write((char *)(&op), 1);
     }
 
     void write_size(std::shared_ptr<hpdcache_test_transaction_req> t)
     {
         unsigned op = t->req_size.to_uint();
-        trace->write((char*)(&op), 1);
+        trace->write((char *)(&op), 1);
     }
 
     void write_boolean(std::shared_ptr<hpdcache_test_transaction_req> t)
@@ -403,7 +403,7 @@ public:
         if (Logger::is_debug_enabled()) {
             // display_binary(bool_value);
         }
-        trace->write((char*)(&bool_value), 1);
+        trace->write((char *)(&bool_value), 1);
     }
 
     unsigned construct_bool_in_one_byte(const bool to_add, unsigned result)
@@ -417,15 +417,14 @@ public:
 
     void open_trace(std::string trace_name)
     {
-
         trace = new std::ofstream(trace_name, std::ios_base::binary | std::ios::trunc);
     }
 
     void close_trace() { trace->close(); }
 
-    void write_delay(int* delay) { trace->write((char*)delay, sizeof(int)); }
+    void write_delay(int *delay) { trace->write((char *)delay, sizeof(int)); }
 
-    void write_in_trace(std::shared_ptr<hpdcache_test_transaction_req> t, int* delay)
+    void write_in_trace(std::shared_ptr<hpdcache_test_transaction_req> t, int *delay)
     {
         write_delay(delay);
         write_address(t);
@@ -436,11 +435,10 @@ public:
     }
 };
 
-trace_writer* is_instance = nullptr;
+trace_writer *is_instance = nullptr;
 std::mutex mutex_;
 
-trace_writer*
-instance_trace_writter()
+trace_writer *instance_trace_writter()
 {
     std::lock_guard<std::mutex> lock(mutex_);
     if (is_instance) {

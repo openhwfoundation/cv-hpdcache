@@ -25,39 +25,37 @@
 #ifndef __SEQUENCE_H__
 #define __SEQUENCE_H__
 
-#include "transaction_pool.h"
 #include <memory>
 #include <systemc>
+
+#include "transaction_pool.h"
 
 class Transaction;
 
 class Sequence : public sc_core::sc_module
 {
-public:
+  public:
     sc_core::sc_in<bool> clk_i;
     sc_core::sc_in<bool> rst_ni;
     sc_core::sc_fifo_out<std::shared_ptr<Transaction>> transaction_fifo_o;
     sc_core::sc_fifo_in<uint64_t> transaction_ret_i;
 
     Sequence(sc_core::sc_module_name nm)
-      : sc_module(nm)
-      , clk_i("clk_i")
-      , rst_ni("rst_ni")
-      , transaction_fifo_o("transaction_fifo_o")
-      , transaction_ret_i("transaction_ret_i") {}
+        : sc_module(nm), clk_i("clk_i"), rst_ni("rst_ni"), transaction_fifo_o("transaction_fifo_o"),
+          transaction_ret_i("transaction_ret_i")
+    {
+    }
 
-    virtual ~Sequence() {};
+    virtual ~Sequence(){};
 
-    template<typename T>
-    std::shared_ptr<T> acquire_transaction()
+    template <typename T> std::shared_ptr<T> acquire_transaction()
     {
         std::shared_ptr<T> ret = transaction_pool.acquire_transaction<T>();
         *ret = T(); // initialize
         return ret;
     }
 
-    template<typename T>
-    std::shared_ptr<T> acquire_transaction(const T& init)
+    template <typename T> std::shared_ptr<T> acquire_transaction(const T &init)
     {
         std::shared_ptr<T> ret = transaction_pool.acquire_transaction<T>();
         uint64_t id = ret->get_id();
@@ -66,13 +64,12 @@ public:
         return ret;
     }
 
-    template<typename T>
-    void release_transaction(std::shared_ptr<T> t)
+    template <typename T> void release_transaction(std::shared_ptr<T> t)
     {
         transaction_pool.release_transaction<T>(t);
     }
 
-protected:
+  protected:
     Transaction_pool transaction_pool;
 };
 

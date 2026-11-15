@@ -26,11 +26,12 @@
 #ifndef __HPDCACHE_TEST_AGENT_H__
 #define __HPDCACHE_TEST_AGENT_H__
 
+#include <verilated.h>
+
 #include <iostream>
 #include <list>
 #include <sstream>
 #include <systemc>
-#include <verilated.h>
 
 #include "agent.h"
 #include "hpdcache_test_defs.h"
@@ -40,7 +41,7 @@
 
 class hpdcache_test_agent : public Agent
 {
-public:
+  public:
     sc_out<bool> core_req_valid_o;
     sc_in<bool> core_req_ready_i;
     sc_out<sc_bv<HPDCACHE_CORE_REQ_WIDTH>> core_req_o;
@@ -57,18 +58,12 @@ public:
     sc_fifo_out<hpdcache_test_transaction_resp> sb_core_resp_o;
 
     hpdcache_test_agent(sc_core::sc_module_name nm)
-      : Agent(nm)
-      , core_req_valid_o("core_req_valid_o")
-      , core_req_ready_i("core_req_ready_i")
-      , core_req_o("core_req_o")
-      , core_req_tag_o("core_req_tag_o")
-      , core_req_pma_o("core_req_pma_o")
-      , core_req_abort_o("core_req_abort_o")
-      , core_rsp_valid_i("core_rsp_valid_i")
-      , core_rsp_i("core_rsp_i")
-      , sb_core_req_o("sb_core_req_o")
-      , sb_core_resp_o("sb_core_resp_o")
-      , no_inflight_requests_i("no_inflight_requests_i")
+        : Agent(nm), core_req_valid_o("core_req_valid_o"), core_req_ready_i("core_req_ready_i"),
+          core_req_o("core_req_o"), core_req_tag_o("core_req_tag_o"),
+          core_req_pma_o("core_req_pma_o"), core_req_abort_o("core_req_abort_o"),
+          core_rsp_valid_i("core_rsp_valid_i"), core_rsp_i("core_rsp_i"),
+          sb_core_req_o("sb_core_req_o"), sb_core_resp_o("sb_core_resp_o"),
+          no_inflight_requests_i("no_inflight_requests_i")
     {
         std::string driver_name;
 
@@ -99,7 +94,7 @@ public:
 
     ~hpdcache_test_agent() {}
 
-private:
+  private:
     std::shared_ptr<hpdcache_test_driver> driver;
 };
 

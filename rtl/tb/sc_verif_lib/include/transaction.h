@@ -29,11 +29,8 @@
 
 class Transaction
 {
-public:
-    Transaction()
-      : __id(0)
-    {
-    }
+  public:
+    Transaction() : __id(0) {}
     virtual ~Transaction() {}
     virtual const std::string to_string() const = 0;
 
@@ -41,7 +38,7 @@ public:
 
     uint64_t get_id() { return __id; };
 
-protected:
+  protected:
     uint64_t __id; // transaction ID
 };
 

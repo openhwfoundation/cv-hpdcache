@@ -25,28 +25,26 @@
 #ifndef __AGENT_H__
 #define __AGENT_H__
 
-#include "sequence.h"
-#include "transaction.h"
 #include <iostream>
 #include <list>
 #include <string>
 #include <systemc>
+
+#include "sequence.h"
+#include "transaction.h"
 
 class Agent : public sc_core::sc_module
 {
     typedef std::list<std::shared_ptr<Sequence>> Sequence_list;
     typedef Sequence_list::const_iterator Sequence_iterator;
 
-public:
+  public:
     sc_core::sc_in<bool> clk_i;
     sc_core::sc_in<bool> rst_ni;
 
     Agent(sc_core::sc_module_name nm)
-      : sc_module(nm)
-      , clk_i("clk_i")
-      , rst_ni("rst_ni")
-      , transaction_fifo("transaction_fifo")
-      , transaction_ret("transaction_ret")
+        : sc_module(nm), clk_i("clk_i"), rst_ni("rst_ni"), transaction_fifo("transaction_fifo"),
+          transaction_ret("transaction_ret")
     { /*empty*/
     }
 
@@ -64,11 +62,11 @@ public:
 
     Sequence_list get_sequence_list() { return slist; }
 
-protected:
+  protected:
     sc_core::sc_fifo<std::shared_ptr<Transaction>> transaction_fifo;
     sc_core::sc_fifo<uint64_t> transaction_ret;
 
-private:
+  private:
     Sequence_list slist;
 };
 

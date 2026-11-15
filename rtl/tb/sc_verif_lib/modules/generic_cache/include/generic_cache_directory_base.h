@@ -30,21 +30,18 @@
 
 class GenericCacheDirectoryBase
 {
-protected:
+  protected:
     std::string name_m;
-    uint64_t* tag_m;
-    bool* val_m;
+    uint64_t *tag_m;
+    bool *val_m;
 
     size_t ways_m;
     size_t sets_m;
     size_t bytes_m;
 
-public:
-    GenericCacheDirectoryBase(const std::string& name, size_t nways, size_t nsets, size_t nbytes)
-      : name_m(name)
-      , ways_m(nways)
-      , sets_m(nsets)
-      , bytes_m(nbytes)
+  public:
+    GenericCacheDirectoryBase(const std::string &name, size_t nways, size_t nsets, size_t nbytes)
+        : name_m(name), ways_m(nways), sets_m(nsets), bytes_m(nbytes)
     {
         sc_assert(nsets > 0);
         sc_assert(nways > 0);
@@ -60,15 +57,15 @@ public:
         delete[] val_m;
     }
 
-    inline const size_t& getWays() const { return ways_m; }
+    inline const size_t &getWays() const { return ways_m; }
 
-    inline const size_t& getSets() const { return sets_m; }
+    inline const size_t &getSets() const { return sets_m; }
 
-    inline const size_t& getBytesPerLine() const { return bytes_m; }
+    inline const size_t &getBytesPerLine() const { return bytes_m; }
 
-    inline uint64_t& getCacheTag(size_t way, size_t set) { return tag_m[(way * sets_m) + set]; }
+    inline uint64_t &getCacheTag(size_t way, size_t set) { return tag_m[(way * sets_m) + set]; }
 
-    inline bool& getCacheValid(size_t way, size_t set) { return val_m[(way * sets_m) + set]; }
+    inline bool &getCacheValid(size_t way, size_t set) { return val_m[(way * sets_m) + set]; }
 
     inline uint64_t getNline(uint64_t tag, size_t set) { return tag * sets_m + set; }
 
@@ -90,7 +87,7 @@ public:
         }
     }
 
-    bool hit(uint64_t addr, size_t* hit_way, size_t* hit_set)
+    bool hit(uint64_t addr, size_t *hit_way, size_t *hit_set)
     {
         uint64_t tag;
         size_t set;
@@ -141,19 +138,17 @@ public:
         return false;
     }
 
-    virtual bool repl(uint64_t addr,
-                      uint64_t* victim_tag,
-                      size_t* victim_way,
-                      size_t* victim_set) = 0;
+    virtual bool repl(uint64_t addr, uint64_t *victim_tag, size_t *victim_way,
+                      size_t *victim_set) = 0;
 
     virtual void replUpdate(size_t way, size_t set) = 0;
 
-    inline bool alloc(uint64_t addr, size_t* alloc_way, size_t* alloc_set, uint64_t* victim_tag)
+    inline bool alloc(uint64_t addr, size_t *alloc_way, size_t *alloc_set, uint64_t *victim_tag)
     {
         return repl(addr, victim_tag, alloc_way, alloc_set);
     }
 
-    bool access(uint64_t addr, size_t* hit_way, size_t* hit_set, bool update_repl_flags = true)
+    bool access(uint64_t addr, size_t *hit_way, size_t *hit_set, bool update_repl_flags = true)
     {
         size_t _hit_way;
         size_t _hit_set;
@@ -162,13 +157,17 @@ public:
             if (update_repl_flags) {
                 replUpdate(_hit_way, _hit_set);
             }
-            if (hit_way != nullptr) *hit_way = _hit_way;
-            if (hit_set != nullptr) *hit_set = _hit_set;
+            if (hit_way != nullptr)
+                *hit_way = _hit_way;
+            if (hit_set != nullptr)
+                *hit_set = _hit_set;
             return true;
         }
 
-        if (hit_way != nullptr) *hit_way = UINT_MAX;
-        if (hit_set != nullptr) *hit_set = UINT_MAX;
+        if (hit_way != nullptr)
+            *hit_way = UINT_MAX;
+        if (hit_set != nullptr)
+            *hit_set = UINT_MAX;
         return false;
     }
 

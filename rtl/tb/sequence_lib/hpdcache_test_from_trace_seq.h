@@ -39,18 +39,18 @@
  */
 class hpdcache_test_from_trace_seq : public hpdcache_test_sequence
 {
-private:
+  private:
     typedef sc_bv<HPDCACHE_REQ_DATA_WIDTH> req_data_t;
 
-    trace_reader* my_trace;
+    trace_reader *my_trace;
 
 #if SC_VERSION_MAJOR < 3
     SC_HAS_PROCESS(hpdcache_test_from_trace_seq);
 #endif
 
-public:
+  public:
     hpdcache_test_from_trace_seq(sc_core::sc_module_name nm, std::string trace_name)
-      : hpdcache_test_sequence(nm, "from_trace_seq")
+        : hpdcache_test_sequence(nm, "from_trace_seq")
     {
         my_trace = new trace_reader(trace_name);
         SC_THREAD(run);

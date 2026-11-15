@@ -12,12 +12,13 @@
 #ifndef __HPDCACHE_TEST_SCOREBOARD_H__
 #define __HPDCACHE_TEST_SCOREBOARD_H__
 
+#include <verilated.h>
+
 #include <iostream>
 #include <map>
 #include <memory>
 #include <sstream>
 #include <systemc>
-#include <verilated.h>
 
 #include "generic_cache_directory_plru.h"
 #include "hpdcache_test_amo.h"
@@ -39,7 +40,7 @@
 
 class hpdcache_test_scoreboard : public sc_module
 {
-public:
+  public:
     sc_in<bool> clk_i;
 
     sc_fifo_in<hpdcache_test_transaction_req> core_req_i;
@@ -70,52 +71,22 @@ public:
     sc_out<bool> no_inflight_requests_o;
 
     hpdcache_test_scoreboard(sc_core::sc_module_name nm)
-      : sc_module(nm)
-      , core_req_i("core_req_i")
-      , core_resp_i("core_resp_i")
-      , mem_read_req_i("mem_read_req_i")
-      , mem_read_resp_i("mem_read_resp_i")
-      , mem_write_req_i("mem_write_req_i")
-      , mem_write_resp_i("mem_write_resp_i")
-      , nb_cycles(0)
-      , nb_cycles_effective(0)
-      , nb_core_req(0)
-      , nb_core_req_need_rsp(0)
-      , nb_core_resp(0)
-      , nb_mem_read_req(0)
-      , nb_mem_read_resp(0)
-      , nb_mem_write_req(0)
-      , nb_mem_write_resp(0)
-      , nb_error(0)
-      , sb_error_limit_m(0)
-      , evt_cache_write_miss(0)
-      , evt_cache_read_miss(0)
-      , evt_cache_dir_unc_err(0)
-      , evt_cache_dir_cor_err(0)
-      , evt_cache_dat_unc_err(0)
-      , evt_cache_dat_cor_err(0)
-      , evt_scrub_complete(0)
-      , evt_uncached_req(0)
-      , evt_cmo_req(0)
-      , evt_write_req(0)
-      , evt_read_req(0)
-      , evt_prefetch_req(0)
-      , evt_req_on_hold(0)
-      , evt_rtab_rollback(0)
-      , evt_stall_refill(0)
-      , evt_stall(0)
-      , seq(nullptr)
-      , mem_resp_model(nullptr)
-      , sc_is_atomic(false)
-      ,
+        : sc_module(nm), core_req_i("core_req_i"), core_resp_i("core_resp_i"),
+          mem_read_req_i("mem_read_req_i"), mem_read_resp_i("mem_read_resp_i"),
+          mem_write_req_i("mem_write_req_i"), mem_write_resp_i("mem_write_resp_i"), nb_cycles(0),
+          nb_cycles_effective(0), nb_core_req(0), nb_core_req_need_rsp(0), nb_core_resp(0),
+          nb_mem_read_req(0), nb_mem_read_resp(0), nb_mem_write_req(0), nb_mem_write_resp(0),
+          nb_error(0), sb_error_limit_m(0), evt_cache_write_miss(0), evt_cache_read_miss(0),
+          evt_cache_dir_unc_err(0), evt_cache_dir_cor_err(0), evt_cache_dat_unc_err(0),
+          evt_cache_dat_cor_err(0), evt_scrub_complete(0), evt_uncached_req(0), evt_cmo_req(0),
+          evt_write_req(0), evt_read_req(0), evt_prefetch_req(0), evt_req_on_hold(0),
+          evt_rtab_rollback(0), evt_stall_refill(0), evt_stall(0), seq(nullptr),
+          mem_resp_model(nullptr), sc_is_atomic(false),
 #if ENABLE_CACHE_DIR_VERIF
-      cache_dir_m(std::make_shared<GenericCacheDirectoryPlru>("hpdcache_dir",
-                                                              HPDCACHE_NWAYS,
-                                                              HPDCACHE_NSETS,
-                                                              HPDCACHE_NWORDS * 8))
-      ,
+          cache_dir_m(std::make_shared<GenericCacheDirectoryPlru>(
+              "hpdcache_dir", HPDCACHE_NWAYS, HPDCACHE_NSETS, HPDCACHE_NWORDS * 8)),
 #endif
-      ram_m(std::make_shared<mem_model>("scoreboard_ram", mem_model::MEM_MODEL_NO_INIT))
+          ram_m(std::make_shared<mem_model>("scoreboard_ram", mem_model::MEM_MODEL_NO_INIT))
     {
         SC_THREAD(core_req_process);
         SC_THREAD(core_resp_process);
@@ -219,7 +190,7 @@ public:
 
     void set_error_limit(size_t error_limit) { sb_error_limit_m = error_limit; }
 
-private:
+  private:
     uint64_t nb_cycles;
     uint64_t nb_cycles_effective;
     uint64_t nb_core_req;
@@ -296,7 +267,7 @@ private:
             return ss.str();
         }
 
-        friend std::ostream& operator<<(std::ostream& os, const inflight_entry_t& req)
+        friend std::ostream &operator<<(std::ostream &os, const inflight_entry_t &req)
         {
             os << req.to_string();
             return os;
@@ -309,7 +280,7 @@ private:
         uint8_t bytes;
         bool is_uncacheable;
         bool is_error;
-        const inflight_entry_t* core_req_ptr;
+        const inflight_entry_t *core_req_ptr;
     };
 
     struct lrsc_reservation_buf_t
@@ -322,8 +293,10 @@ private:
 
     static inline bool within_region(uint64_t addr, uint64_t base, uint64_t end)
     {
-        if (addr < base) return false;
-        if (addr > end) return false;
+        if (addr < base)
+            return false;
+        if (addr > end)
+            return false;
         return true;
     }
 
@@ -359,27 +332,42 @@ private:
     void perf_events_process()
     {
         nb_cycles++;
-        if (evt_cache_write_miss_i.read()) evt_cache_write_miss++;
-        if (evt_cache_read_miss_i.read()) evt_cache_read_miss++;
-        if (evt_cache_dir_unc_err_i.read()) evt_cache_dir_unc_err++;
-        if (evt_cache_dir_cor_err_i.read()) evt_cache_dir_cor_err++;
-        if (evt_cache_dat_unc_err_i.read()) evt_cache_dat_unc_err++;
-        if (evt_cache_dat_cor_err_i.read()) evt_cache_dat_cor_err++;
-        if (evt_scrub_complete_i.read()) evt_scrub_complete++;
-        if (evt_uncached_req_i.read()) evt_uncached_req++;
-        if (evt_cmo_req_i.read()) evt_cmo_req++;
-        if (evt_write_req_i.read()) evt_write_req++;
-        if (evt_read_req_i.read()) evt_read_req++;
-        if (evt_prefetch_req_i.read()) evt_prefetch_req++;
-        if (evt_req_on_hold_i.read()) evt_req_on_hold++;
-        if (evt_rtab_rollback_i.read()) evt_rtab_rollback++;
-        if (evt_stall_refill_i.read()) evt_stall_refill++;
-        if (evt_stall_i.read()) evt_stall++;
+        if (evt_cache_write_miss_i.read())
+            evt_cache_write_miss++;
+        if (evt_cache_read_miss_i.read())
+            evt_cache_read_miss++;
+        if (evt_cache_dir_unc_err_i.read())
+            evt_cache_dir_unc_err++;
+        if (evt_cache_dir_cor_err_i.read())
+            evt_cache_dir_cor_err++;
+        if (evt_cache_dat_unc_err_i.read())
+            evt_cache_dat_unc_err++;
+        if (evt_cache_dat_cor_err_i.read())
+            evt_cache_dat_cor_err++;
+        if (evt_scrub_complete_i.read())
+            evt_scrub_complete++;
+        if (evt_uncached_req_i.read())
+            evt_uncached_req++;
+        if (evt_cmo_req_i.read())
+            evt_cmo_req++;
+        if (evt_write_req_i.read())
+            evt_write_req++;
+        if (evt_read_req_i.read())
+            evt_read_req++;
+        if (evt_prefetch_req_i.read())
+            evt_prefetch_req++;
+        if (evt_req_on_hold_i.read())
+            evt_req_on_hold++;
+        if (evt_rtab_rollback_i.read())
+            evt_rtab_rollback++;
+        if (evt_stall_refill_i.read())
+            evt_stall_refill++;
+        if (evt_stall_i.read())
+            evt_stall++;
     }
 
     void check_inflight_requests()
     {
-
         const bool no_inflight =
             inflight_mem_write_m.empty() && inflight_mem_read_m.empty() && inflight_m.empty();
 
@@ -393,7 +381,7 @@ private:
         return (sc_core::sc_report_handler::get_verbosity_level() >= verbosity);
     }
 
-    void print_error(const std::string& msg)
+    void print_error(const std::string &msg)
     {
         std::cout << sc_time_stamp().to_string() << " / SB_ERROR: " << msg << std::endl;
 
@@ -406,7 +394,7 @@ private:
         }
     }
 
-    void print_debug(const std::string& msg)
+    void print_debug(const std::string &msg)
     {
         std::cout << sc_time_stamp().to_string() << " / SB_DEBUG: " << msg << std::endl;
     }
@@ -423,7 +411,8 @@ private:
             }
 
             //  count the number of requests that need a response
-            if (req.req_need_rsp) nb_core_req_need_rsp++;
+            if (req.req_need_rsp)
+                nb_core_req_need_rsp++;
 
             uint32_t req_id = req.req_tid.to_uint();
             uint64_t req_addr = req.req_addr.to_uint64();
@@ -441,28 +430,29 @@ private:
             if (req.is_cmo()) {
 #if ENABLE_CACHE_DIR_VERIF
                 switch (req.req_size.to_uint()) {
-                    case hpdcache_test_transaction_req::HPDCACHE_CMO_INVAL_NLINE: {
-                        cache_dir_m->inval(req_addr);
+                case hpdcache_test_transaction_req::HPDCACHE_CMO_INVAL_NLINE: {
+                    cache_dir_m->inval(req_addr);
+                    break;
+                }
+                case hpdcache_test_transaction_req::HPDCACHE_CMO_INVAL_SET_WAY: {
+                    uint64_t wdata = req.req_wdata.range(HPDCACHE_NWAYS - 1, 0).to_uint64();
+                    if (wdata == 0)
                         break;
-                    }
-                    case hpdcache_test_transaction_req::HPDCACHE_CMO_INVAL_SET_WAY: {
-                        uint64_t wdata = req.req_wdata.range(HPDCACHE_NWAYS - 1, 0).to_uint64();
-                        if (wdata == 0) break;
-                        for (int way = 0; way < HPDCACHE_NWAYS; way++) {
-                            if ((wdata & (1 << way)) != 0) {
-                                cache_dir_m->inval(way, cache_dir_m->getAddrSet(req_addr));
-                            }
+                    for (int way = 0; way < HPDCACHE_NWAYS; way++) {
+                        if ((wdata & (1 << way)) != 0) {
+                            cache_dir_m->inval(way, cache_dir_m->getAddrSet(req_addr));
                         }
-                        break;
                     }
-                    case hpdcache_test_transaction_req::HPDCACHE_CMO_INVAL_ALL: {
-                        for (int way = 0; way < HPDCACHE_NWAYS; way++) {
-                            for (int set = 0; set < HPDCACHE_NSETS; set++) {
-                                cache_dir_m->inval(way, set);
-                            }
+                    break;
+                }
+                case hpdcache_test_transaction_req::HPDCACHE_CMO_INVAL_ALL: {
+                    for (int way = 0; way < HPDCACHE_NWAYS; way++) {
+                        for (int set = 0; set < HPDCACHE_NSETS; set++) {
+                            cache_dir_m->inval(way, set);
                         }
-                        break;
                     }
+                    break;
+                }
                 }
 #endif
                 if (!req.req_need_rsp) {
@@ -477,9 +467,9 @@ private:
 #if ENABLE_CACHE_DIR_VERIF
             size_t hit_way;
             size_t hit_set;
-            if ((req.is_load() || req.is_store() || req.is_amo_lr() || req.is_amo_sc()
-                 || req.is_amo())
-                && !req.is_uncacheable()) {
+            if ((req.is_load() || req.is_store() || req.is_amo_lr() || req.is_amo_sc() ||
+                 req.is_amo()) &&
+                !req.is_uncacheable()) {
                 hit = cache_dir_m->access(req_addr, &hit_way, &hit_set);
             }
 #endif
@@ -583,9 +573,9 @@ private:
                 lrsc_entry_base = get_offset(e.addr) >> 3;
                 lrsc_entry_end = lrsc_entry_base + lrsc_entry_words;
 
-                addr_match = lrsc_buf_m.valid && (lrsc_rsrv_nline == lrsc_entry_nline)
-                             && (lrsc_rsrv_word >= lrsc_entry_base)
-                             && (lrsc_rsrv_word < lrsc_entry_end);
+                addr_match = lrsc_buf_m.valid && (lrsc_rsrv_nline == lrsc_entry_nline) &&
+                             (lrsc_rsrv_word >= lrsc_entry_base) &&
+                             (lrsc_rsrv_word < lrsc_entry_end);
 
                 if (req.is_amo_sc()) {
                     //  SC can get an error response only if there is a valid
@@ -675,7 +665,7 @@ private:
                 continue;
             }
 
-            const inflight_entry_t& e = it->second;
+            const inflight_entry_t &e = it->second;
 
 #if DEBUG_HPDCACHE_TEST_SCOREBOARD
             if (check_verbosity(sc_core::SC_DEBUG)) {
@@ -749,8 +739,8 @@ private:
                     //  check the received data
                     //  {{{
                     for (int i = _byte; i < (_byte + e.bytes); i++) {
-                        const uint8_t recv = reinterpret_cast<const uint8_t*>(rdata)[i];
-                        const uint8_t expc = reinterpret_cast<const uint8_t*>(e.rdata)[i];
+                        const uint8_t recv = reinterpret_cast<const uint8_t *>(rdata)[i];
+                        const uint8_t expc = reinterpret_cast<const uint8_t *>(e.rdata)[i];
                         const uint8_t rv = e.rv[i / 8];
 
                         if ((rv >> (i % 8)) & 0x1) {
@@ -836,9 +826,9 @@ private:
             }
 
             //  find the associated core request
-            const inflight_entry_t* core_req = nullptr;
-            for (const auto& cr : inflight_m) {
-                const inflight_entry_t& _cr = cr.second;
+            const inflight_entry_t *core_req = nullptr;
+            for (const auto &cr : inflight_m) {
+                const inflight_entry_t &_cr = cr.second;
                 if (get_nline(_cr.addr) == get_nline(req.addr)) {
                     //  get first occurrence
                     if (core_req == nullptr) {
@@ -899,8 +889,8 @@ private:
             }
 
             //  get a pointer to the originating core request
-            inflight_mem_entry_t* mem_req = &it->second;
-            const inflight_entry_t* core_req = mem_req->core_req_ptr;
+            inflight_mem_entry_t *mem_req = &it->second;
+            const inflight_entry_t *core_req = mem_req->core_req_ptr;
 
 #if ENABLE_CACHE_DIR_VERIF
             if (!mem_req->is_uncacheable) {
@@ -1039,9 +1029,9 @@ private:
             }
 
             //  find the associated core request
-            const inflight_entry_t* core_req = nullptr;
-            for (const auto& cr : inflight_m) {
-                const inflight_entry_t& _cr = cr.second;
+            const inflight_entry_t *core_req = nullptr;
+            for (const auto &cr : inflight_m) {
+                const inflight_entry_t &_cr = cr.second;
                 if (get_nline(_cr.addr) == get_nline(req.addr)) {
                     //  get first occurrence
                     if (core_req == nullptr) {
