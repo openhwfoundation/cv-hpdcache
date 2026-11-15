@@ -33,6 +33,7 @@
 #include <string>
 #include <type_traits>
 
+#include "logger.h"
 #include "transaction.h"
 
 class Transaction_pool
