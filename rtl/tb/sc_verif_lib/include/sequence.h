@@ -46,7 +46,7 @@ class Sequence : public sc_core::sc_module
     {
     }
 
-    virtual ~Sequence(){};
+    virtual ~Sequence() {}
 
     template <typename T> std::shared_ptr<T> acquire_transaction()
     {

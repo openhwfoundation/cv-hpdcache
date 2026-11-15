@@ -45,7 +45,9 @@ class hpdcache_test_mem_resp_model_base
         bool error;
 
         segment_t(uint64_t base, uint64_t end, bool error)
-            : base_addr(base), end_addr(end), error(error){};
+            : base_addr(base), end_addr(end), error(error)
+        {
+        }
     };
 
     struct excl_reservation_buf_t
