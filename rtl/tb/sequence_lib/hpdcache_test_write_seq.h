@@ -28,8 +28,8 @@
 
 #include "hpdcache_test_defs.h"
 #include "hpdcache_test_mem_resp_model_base.h"
-#include "hpdcache_test_sequence.h"
 #include "hpdcache_test_range_distribution.h"
+#include "hpdcache_test_sequence.h"
 #include <random>
 #include <systemc>
 
@@ -45,14 +45,13 @@ public:
         seg.set_base(0x00000000ULL);
         seg.set_length(0x00004000ULL);
         seg.set_uncached(false);
-
     }
 
 private:
     hpdcache_test_sequence::hpdcache_test_memory_segment seg;
     std::default_random_engine rg;
     std::uniform_int_distribution<uint32_t> data_dist;
-    std::uniform_int_distribution<uint32_t> size_dist{0, 3};
+    std::uniform_int_distribution<uint32_t> size_dist{ 0, 3 };
     std::uniform_int_distribution<uint64_t> addr_dist;
     const unsigned int HPDCACHE_REQ_DATA_BYTES = HPDCACHE_REQ_DATA_WIDTH / 8;
 

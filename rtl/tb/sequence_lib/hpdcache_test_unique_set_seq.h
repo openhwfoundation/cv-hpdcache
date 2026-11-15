@@ -82,8 +82,8 @@ private:
     std::bernoulli_distribution amo_sc_do_dist;
     std::bernoulli_distribution need_rsp_dist;
     std::uniform_int_distribution<uint32_t> size_dist;
-    std::uniform_int_distribution<uint64_t> set_dist{0, HPDCACHE_SETS - 1};
-    std::uniform_int_distribution<int> lrsc_inbetween_instrs_dist{0, 10};
+    std::uniform_int_distribution<uint64_t> set_dist{ 0, HPDCACHE_SETS - 1 };
+    std::uniform_int_distribution<int> lrsc_inbetween_instrs_dist{ 0, 10 };
     hpdcache_test_enum_distribution<int> seg_dist;
     hpdcache_test_enum_distribution<hpdcache_test_transaction_req::hpdcache_wr_policy_hint_e>
         wr_policy_dist;

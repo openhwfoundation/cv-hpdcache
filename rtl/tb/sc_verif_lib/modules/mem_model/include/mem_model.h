@@ -27,8 +27,8 @@ public:
 
     struct data_entry_t
     {
-        uint64_t data;   // data word
-        uint8_t  vmask;  // byte validity mask
+        uint64_t data; // data word
+        uint8_t vmask; // byte validity mask
     };
 
     typedef std::map<uint64_t, data_entry_t> mem_array_t;
@@ -49,14 +49,14 @@ public:
 
     const char* getName() { return name_m.c_str(); }
 
-    uint64_t readMemory(uint64_t word_addr, uint8_t *vmask = nullptr)
+    uint64_t readMemory(uint64_t word_addr, uint8_t* vmask = nullptr)
     {
         mem_array_t::const_iterator it;
 
         //  check if the target address was already accessed
         it = mem_array_m.find(word_addr);
         if (it != mem_array_m.end()) {
-            const data_entry_t &x = it->second;
+            const data_entry_t& x = it->second;
             if (vmask != nullptr) *vmask = x.vmask;
             return x.data;
         }
@@ -76,7 +76,7 @@ public:
         }
         //  if init mode selected, add the word to the memory
         data_entry_t x;
-        x.data  = value;
+        x.data = value;
         x.vmask = 0xff;
         mem_array_m.insert(mem_array_pair_t(word_addr, x));
         if (vmask != nullptr) *vmask = x.vmask;
@@ -91,8 +91,8 @@ public:
         //  check if the target address was already accessed
         it = mem_array_m.find(word_addr);
         if (it != mem_array_m.end()) {
-            data_entry_t &x = it->second;
-            x.data   = (x.data & ~bmask) | (data & bmask);
+            data_entry_t& x = it->second;
+            x.data = (x.data & ~bmask) | (data & bmask);
             x.vmask |= mask;
             return;
         }
@@ -110,7 +110,7 @@ public:
                 break;
         }
         data_entry_t x;
-        x.data  = (value & ~bmask) | (data & bmask);
+        x.data = (value & ~bmask) | (data & bmask);
         x.vmask = mask;
         mem_array_m.insert(mem_array_pair_t(word_addr, x));
     }
@@ -122,7 +122,7 @@ public:
         //  check if the target address was already accessed
         it = mem_array_m.find(word_addr);
         if (it != mem_array_m.end()) {
-            const data_entry_t &x = it->second;
+            const data_entry_t& x = it->second;
             return x.vmask;
         }
         return 0x0;

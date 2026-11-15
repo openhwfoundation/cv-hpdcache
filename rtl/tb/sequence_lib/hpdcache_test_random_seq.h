@@ -13,10 +13,10 @@
 #define __HPDCACHE_TEST_RANDOM_SEQ_H__
 
 #include "hpdcache_test_defs.h"
-#include "hpdcache_test_sequence.h"
 #include "hpdcache_test_enum_distribution.h"
-#include <systemc>
+#include "hpdcache_test_sequence.h"
 #include <random>
+#include <systemc>
 
 #define HPDCACHE_TEST_SEQUENCE_ENABLE_ERROR_SEGMENTS 1
 #define HPDCACHE_TEST_SEQUENCE_AMO_SUPPORT true
@@ -24,19 +24,18 @@
 class hpdcache_test_random_seq : public hpdcache_test_sequence
 {
 public:
-
     hpdcache_test_random_seq(sc_core::sc_module_name nm)
-      : hpdcache_test_sequence(nm, "random_seq"),
-        delay_dist(2),
-        amo_sc_do_dist(.75),
-        need_rsp_dist(.95),
-        size_dist(0, LOG2_REQ_DATA_BYTES),
-        fault_inj_dist(.01),
-        fault_inj_way_dist(0, HPDCACHE_WAYS - 1),
-        fault_inj_double_dist(.05),
-        wr_policy_dist(),
-        seg_dist(),
-        op_dist()
+      : hpdcache_test_sequence(nm, "random_seq")
+      , delay_dist(2)
+      , amo_sc_do_dist(.75)
+      , need_rsp_dist(.95)
+      , size_dist(0, LOG2_REQ_DATA_BYTES)
+      , fault_inj_dist(.01)
+      , fault_inj_way_dist(0, HPDCACHE_WAYS - 1)
+      , fault_inj_double_dist(.05)
+      , wr_policy_dist()
+      , seg_dist()
+      , op_dist()
     {
         SC_THREAD(run);
         sensitive << clk_i.pos();
@@ -52,7 +51,8 @@ public:
 #if CONF_HPDCACHE_TEST_FAULT_INJ_DIR
         fault_inj_domain_dist.add_value_weight(hpdcache_fault_injection::domain_e::CACHE_DIR, 20),
 #endif
-        fault_inj_domain_dist.add_value_weight(hpdcache_fault_injection::domain_e::CACHE_DAT, 80);
+            fault_inj_domain_dist.add_value_weight(hpdcache_fault_injection::domain_e::CACHE_DAT,
+                                                   80);
         fault_inj_domain_dist.init(rg);
     }
 
@@ -128,8 +128,10 @@ public:
 
         op_dist.add_value_weight(hpdcache_test_transaction_req::HPDCACHE_REQ_CMO_FLUSH_NLINE, 10);
         op_dist.add_value_weight(hpdcache_test_transaction_req::HPDCACHE_REQ_CMO_FLUSH_ALL, 1);
-        op_dist.add_value_weight(hpdcache_test_transaction_req::HPDCACHE_REQ_CMO_FLUSH_INVAL_NLINE, 10);
-        op_dist.add_value_weight(hpdcache_test_transaction_req::HPDCACHE_REQ_CMO_FLUSH_INVAL_ALL, 1);
+        op_dist.add_value_weight(hpdcache_test_transaction_req::HPDCACHE_REQ_CMO_FLUSH_INVAL_NLINE,
+                                 10);
+        op_dist.add_value_weight(hpdcache_test_transaction_req::HPDCACHE_REQ_CMO_FLUSH_INVAL_ALL,
+                                 1);
         op_dist.init(rg);
     }
 
@@ -165,8 +167,8 @@ private:
     inline sc_bv<HPDCACHE_REQ_DATA_WIDTH> create_random_data()
     {
         sc_uint<HPDCACHE_REQ_DATA_WIDTH> ret;
-        for (int i = 0; i < HPDCACHE_REQ_DATA_WIDTH/32; i++) {
-            ret.range((i+1)*32-1, i*32) = data_dist(rg);
+        for (int i = 0; i < HPDCACHE_REQ_DATA_WIDTH / 32; i++) {
+            ret.range((i + 1) * 32 - 1, i * 32) = data_dist(rg);
         }
         return sc_bv<HPDCACHE_REQ_DATA_WIDTH>(ret);
     }

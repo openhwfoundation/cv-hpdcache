@@ -4,8 +4,8 @@
 #ifndef __HPDCACHE_TEST_WBUF_THRESHOLD_SEQ_H__
 #define __HPDCACHE_TEST_WBUF_THRESHOLD_SEQ_H__
 
-#include "hpdcache_test_sequence.h"
 #include "hpdcache_test_range_distribution.h"
+#include "hpdcache_test_sequence.h"
 
 class hpdcache_test_wbuf_threshold_seq : public hpdcache_test_sequence
 {

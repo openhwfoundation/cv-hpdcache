@@ -51,7 +51,7 @@ jobs:
         shell: bash
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang-format-15
+          sudo apt-get install -y clang-format-18
 
       # Check C++ code formatting
       - name: Check C++ code formatting

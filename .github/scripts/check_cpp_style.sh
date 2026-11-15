@@ -14,7 +14,7 @@
        -not -path "rtl/tb/build/*" -and \
         \( -name '*.cpp' -or -name '*.c' -or -name '*.h' \) \
     \) \
-    -exec clang-format-15 --style=file:rtl/tb/.clang-format -Werror -n {} \;
+    -exec clang-format-18 --style=file:rtl/tb/.clang-format -Werror -n {} \;
 ) |& tee clang-format.log
 grep -q 'error:' clang-format.log
 [[ $? -eq 0 ]] && exit 1
