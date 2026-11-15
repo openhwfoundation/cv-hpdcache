@@ -21,4 +21,4 @@ find ${SRC_DIRS[@]} -type f \( \
         -name '*.cpp' \) \
         > ${FLIST}
 
-clang-format-18 -Werror -i --files ${FLIST} hpdcache_tb.cpp
+clang-format-18 -Werror -n --files ${FLIST} hpdcache_tb.cpp
