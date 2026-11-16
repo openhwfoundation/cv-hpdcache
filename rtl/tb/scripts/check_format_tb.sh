@@ -15,10 +15,10 @@ SRC_DIRS=(include/
           qemu_plugin/
           sequence_lib/)
 
-find ${SRC_DIRS} -type f \( \
+find ${SRC_DIRS[@]} -type f \( \
         -name '*.h' -or \
         -name '*.c' -or \
         -name '*.cpp' \) \
         > ${FLIST}
 
-clang-format-15 -Werror --dry-run --files ${FLIST} hpdcache_tb.cpp
+clang-format-18 -Werror -n --files ${FLIST} hpdcache_tb.cpp

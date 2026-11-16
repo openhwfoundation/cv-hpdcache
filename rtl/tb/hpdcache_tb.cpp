@@ -9,28 +9,27 @@
  *  Date       : October, 2024
  *  Description: Definition of the entry point for the HPDCACHE testbench
  */
+#include <getopt.h>
+#include <verilated.h>
+
 #include <chrono>
 #include <fstream>
-#include <getopt.h>
 #include <iomanip>
 #include <iostream>
 #include <map>
 #include <memory>
 #include <systemc>
-
-#include <verilated.h>
 #if VM_TRACE
 #include <verilated_vcd_sc.h>
 #endif
 
 #include "Vhpdcache_wrapper.h"
-#include "logger.h"
-
 #include "hpdcache_test_agent.h"
 #include "hpdcache_test_defs.h"
 #include "hpdcache_test_mem_resp_model.h"
 #include "hpdcache_test_scoreboard.h"
 #include "hpdcache_test_sequence.h"
+#include "logger.h"
 #include "sequence_lib/hpdcache_test_from_trace_seq.h"
 #include "sequence_lib/hpdcache_test_random_seq.h"
 #include "sequence_lib/hpdcache_test_read_seq.h"
@@ -40,7 +39,7 @@
 
 class hpdcache_test
 {
-public:
+  public:
     uint64_t max_cycles;
     uint64_t max_trans;
     size_t error_limit;
@@ -48,19 +47,15 @@ public:
     std::string trace_name;
     std::string file_name;
 
-private:
+  private:
     std::string covname;
     std::shared_ptr<VerilatedVcdSc> tf;
     std::shared_ptr<hpdcache_test_sequence> seq;
 
-public:
+  public:
     hpdcache_test()
-      : max_cycles(1ULL << 30)
-      , max_trans(100)
-      , error_limit(0)
-      , covname("")
-      , tf(nullptr)
-      , seq(nullptr)
+        : max_cycles(1ULL << 30), max_trans(100), error_limit(0), covname(""), tf(nullptr),
+          seq(nullptr)
     {
         top = std::make_shared<Vhpdcache_wrapper>("i_top");
         hpdcache_test_agent_i = std::make_shared<hpdcache_test_agent>("i_agent");
@@ -247,7 +242,8 @@ public:
         start = std::chrono::system_clock::now();
         sc_start(sc_core::SC_ZERO_TIME);
 
-        if (trace_on) this->trace(trace_name);
+        if (trace_on)
+            this->trace(trace_name);
 
         wbuf_flush.write(false);
         cfg_enable.write(true);
@@ -283,10 +279,12 @@ public:
         for (; cycles < max_cycles; ++cycles) {
             clk_i = 0;
             sc_start(500, sc_core::SC_PS);
-            if (Verilated::gotFinish()) break;
+            if (Verilated::gotFinish())
+                break;
             clk_i = 1;
             sc_start(500, sc_core::SC_PS);
-            if (Verilated::gotFinish()) break;
+            if (Verilated::gotFinish())
+                break;
         }
         end = std::chrono::system_clock::now();
         std::cout << "Finishing the simulation..." << std::endl;
@@ -361,7 +359,7 @@ public:
 #endif
     }
 
-private:
+  private:
     std::shared_ptr<Vhpdcache_wrapper> top;
     std::shared_ptr<hpdcache_test_agent> hpdcache_test_agent_i;
     std::shared_ptr<hpdcache_test_mem_resp_model> hpdcache_test_mem_resp_model_i;
@@ -456,13 +454,9 @@ private:
     sc_core::sc_signal<bool> cfg_scrub_restart;
 };
 
-void
-usage(const char* argv)
-{
-}
+void usage(const char *argv) {}
 
-int
-sc_main(int argc, char** argv)
+int sc_main(int argc, char **argv)
 {
     hpdcache_test test;
     bool write_coverage_data;
@@ -471,97 +465,97 @@ sc_main(int argc, char** argv)
     for (;;) {
         int c;
         int option_index;
-        static struct option long_options[] = { { "help", no_argument, 0, 'h' },
-                                                { "max-cycles", required_argument, 0, 'm' },
-                                                { "seed", required_argument, 0, 'r' },
-                                                { "log-level", required_argument, 0, 'l' },
-                                                { "trace", required_argument, 0, 't' },
-                                                { "coverage", required_argument, 0, 'c' },
-                                                { "sequence", required_argument, 0, 's' },
-                                                { "file", required_argument, 0, 'f' },
-                                                { 0, 0, 0, 0 } };
+        static struct option long_options[] = {{"help", no_argument, 0, 'h'},
+                                               {"max-cycles", required_argument, 0, 'm'},
+                                               {"seed", required_argument, 0, 'r'},
+                                               {"log-level", required_argument, 0, 'l'},
+                                               {"trace", required_argument, 0, 't'},
+                                               {"coverage", required_argument, 0, 'c'},
+                                               {"sequence", required_argument, 0, 's'},
+                                               {"file", required_argument, 0, 'f'},
+                                               {0, 0, 0, 0}};
 
         option_index = 0;
         c = getopt_long(argc, argv, "hm:n:r:c:l:t:f:s:e:", long_options, &option_index);
-        if (c == -1) break;
+        if (c == -1)
+            break;
 
         switch (c) {
-            case '?':
-            case 'h':
-                usage(argv[0]);
-                return 0;
-            case 'm':
-                test.max_cycles = atoll(optarg);
-                break;
-            case 'n':
-                test.max_trans = atoll(optarg);
-                break;
-            case 'r': {
-                unsigned long int seed = strtol(optarg, NULL, 0);
-                std::cout << "info: setting random seed to " << seed << std::endl;
-                srand(seed);
-                scv_random::set_global_seed(seed);
-                break;
-            }
-            case 't':
-                test.trace_on = true;
-                test.trace_name = optarg;
-                break;
-            case 'c':
-                test.coverage(optarg);
-                break;
-            case 'l': {
-                const int level = atoi(optarg);
-                sc_core::sc_verbosity verbosity;
+        case '?':
+        case 'h':
+            usage(argv[0]);
+            return 0;
+        case 'm':
+            test.max_cycles = atoll(optarg);
+            break;
+        case 'n':
+            test.max_trans = atoll(optarg);
+            break;
+        case 'r': {
+            unsigned long int seed = strtol(optarg, NULL, 0);
+            std::cout << "info: setting random seed to " << seed << std::endl;
+            srand(seed);
+            break;
+        }
+        case 't':
+            test.trace_on = true;
+            test.trace_name = optarg;
+            break;
+        case 'c':
+            test.coverage(optarg);
+            break;
+        case 'l': {
+            const int level = atoi(optarg);
+            sc_core::sc_verbosity verbosity;
 
-                switch (level) {
-                    case 0:
-                        verbosity = sc_core::SC_NONE;
-                        break;
-                    case 1:
-                        verbosity = sc_core::SC_LOW;
-                        break;
-                    case 2:
-                        verbosity = sc_core::SC_MEDIUM;
-                        break;
-                    case 3:
-                        verbosity = sc_core::SC_HIGH;
-                        break;
-                    case 4:
-                        verbosity = sc_core::SC_FULL;
-                        break;
-                    case 5:
-                        verbosity = sc_core::SC_DEBUG;
-                        break;
-                    default:
-                        std::cout << "error: unsupported verbosity level" << std::endl;
-                        exit(EXIT_FAILURE);
-                }
-
-                std::cout << "info: setting log level to " << level << std::endl;
-                Logger::set_log_level(level);
-                sc_core::sc_report_handler::set_verbosity_level(verbosity);
+            switch (level) {
+            case 0:
+                verbosity = sc_core::SC_NONE;
                 break;
+            case 1:
+                verbosity = sc_core::SC_LOW;
+                break;
+            case 2:
+                verbosity = sc_core::SC_MEDIUM;
+                break;
+            case 3:
+                verbosity = sc_core::SC_HIGH;
+                break;
+            case 4:
+                verbosity = sc_core::SC_FULL;
+                break;
+            case 5:
+                verbosity = sc_core::SC_DEBUG;
+                break;
+            default:
+                std::cout << "error: unsupported verbosity level" << std::endl;
+                exit(EXIT_FAILURE);
             }
-            case 's':
-                test.set_sequence(optarg);
-                break;
-            case 'f': {
-                test.file_name = optarg;
+
+            std::cout << "info: setting log level to " << level << std::endl;
+            Logger::set_log_level(level);
+            sc_core::sc_report_handler::set_verbosity_level(verbosity);
+            break;
+        }
+        case 's':
+            test.set_sequence(optarg);
+            break;
+        case 'f': {
+            test.file_name = optarg;
 #ifndef CREATE_FILE
-                std::ifstream traceFile(test.file_name, std::ifstream::in);
-                if (!traceFile.good()) {
-                    std::cout << "error: trace file cannot be accessed" << std::endl;
-                    exit(EXIT_FAILURE);
-                }
-#else
-                instance_trace_writter()->open_file(optarg);
-#endif
-                break;
+            std::ifstream traceFile(test.file_name, std::ifstream::in);
+            if (!traceFile.good()) {
+                std::cout << "error: trace file cannot be accessed" << std::endl;
+                exit(EXIT_FAILURE);
             }
-            case 'e':
-                test.error_limit = atoll(optarg);
-                break;
+#else
+            instance_trace_writter()->open_file(optarg);
+#endif
+            break;
+        }
+        case 'e':
+            test.error_limit = atoll(optarg);
+            break;
         }
     }
 

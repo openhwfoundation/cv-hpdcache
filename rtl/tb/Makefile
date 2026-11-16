@@ -132,8 +132,7 @@ endif
 VERILATOR_FLAGS     += $(CONF_DEFINES)
 
 VERILATOR_MAKEFLAGS += USER_CPPFLAGS="$(USER_CPPFLAGS)" \
-                       USER_LDFLAGS="-Wl,-rpath,$(SYSTEMC_LIBDIR)" \
-                       USER_LDLIBS="-lscv"
+                       USER_LDFLAGS="-Wl,-rpath,$(SYSTEMC_LIBDIR)"
 
 
 
@@ -285,7 +284,7 @@ cov_html: cov $(COV_HTML_DIR)/index.html
 $(COV_HTML_DIR)/index.html: $(COV_MERGEFILE).info
 	genhtml --branch-coverage --function-coverage -o coverage_html $<
 
-$(VERILATE_LOG): $(SVLOG_SOURCES) $(BUILD_DIR)/miniz.o $(TB_TOP).cpp
+$(VERILATE_LOG): $(SVLOG_SOURCES) $(BUILD_DIR)/miniz.o ${TB_DIR}/$(TB_TOP).cpp
 	$(Q)$(ECHO) "Verilating the RTL sources... (LOG: $@)"
 	$(Q)$(MKDIR) $(dir $@)
 	$(Q)$(VERILATOR) --sc $(VERILATOR_FLAGS) -Mdir $(BUILD_DIR) \
@@ -293,12 +292,12 @@ $(VERILATE_LOG): $(SVLOG_SOURCES) $(BUILD_DIR)/miniz.o $(TB_TOP).cpp
 	        +incdir+$(HPDCACHE_DIR)/rtl/include \
 	        +incdir+$(HPDCACHE_DIR)/rtl/src/utils/ecc \
 	        $(SVLOG_SOURCES) \
-	        --exe $(TB_TOP).cpp --top-module $(DUT) $(BUILD_DIR)/miniz.o >& $@
+	        --exe ${TB_DIR}/$(TB_TOP).cpp --top-module $(DUT) $(abspath $(BUILD_DIR)/miniz.o) >& $@
 	$(Q)$(ECHO) "VERILATE FINISHED" >> $@
 	$(Q)$(SCANLOG) -pat scripts/scan_patterns/verilate_patterns.pat \
 	        -nowarn $@ |& tee $@.scan ; exit $${PIPESTATUS[0]}
 
-$(BUILD_LOG): $(TB_TOP).cpp
+$(BUILD_LOG): ${TB_DIR}/$(TB_TOP).cpp
 	$(Q)$(ECHO) "Building the testbench... (LOG: $@)"
 	$(Q)$(MKDIR) $(dir $@)
 	$(Q)$(MAKE) -s -C $(BUILD_DIR) -f "V$(DUT).mk" "V$(DUT)" $(VERILATOR_MAKEFLAGS) >& $@

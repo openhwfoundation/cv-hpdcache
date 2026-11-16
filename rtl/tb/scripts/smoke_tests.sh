@@ -59,7 +59,7 @@ for c in ${CONFIGS[@]} ; do
         ret=$?
         if [[ ${ret} != 0 ]] ; then
             printf "FAILURE: there are failing tests\n"
-            printf "Run \"make nonregression CONFIG=$s SEQUENCE=$s\" in the <git>/rtl/tb directory for details\n"
+            printf "Run \"make nonregression CONFIG=$c SEQUENCE=$s\" in the <git>/rtl/tb directory for details\n"
             exit 1 ;
         fi
     done

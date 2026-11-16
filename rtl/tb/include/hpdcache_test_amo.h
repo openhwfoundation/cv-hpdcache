@@ -31,16 +31,12 @@ class hpdcache_test_transaction_req;
 
 class hpdcache_test_amo
 {
-protected:
-    hpdcache_test_amo()
-    { /* empty */
-    }
+  protected:
+    hpdcache_test_amo() { /* empty */ }
 
-    ~hpdcache_test_amo()
-    { /* empty */
-    }
+    ~hpdcache_test_amo() { /* empty */ }
 
-public:
+  public:
     static uint64_t compute_amo(unsigned atop, uint64_t ld_data, uint64_t st_data, unsigned bytes)
     {
         bool umax = (ld_data > st_data);
@@ -53,36 +49,36 @@ public:
 
         uint64_t result;
         switch (atop) {
-            case hpdcache_test_transaction_req::HPDCACHE_REQ_AMO_SWAP:
-                result = st_data;
-                break;
-            case hpdcache_test_transaction_req::HPDCACHE_REQ_AMO_ADD:
-                result = ld_data + st_data;
-                break;
-            case hpdcache_test_transaction_req::HPDCACHE_REQ_AMO_AND:
-                result = ld_data & st_data;
-                break;
-            case hpdcache_test_transaction_req::HPDCACHE_REQ_AMO_OR:
-                result = ld_data | st_data;
-                break;
-            case hpdcache_test_transaction_req::HPDCACHE_REQ_AMO_XOR:
-                result = ld_data ^ st_data;
-                break;
-            case hpdcache_test_transaction_req::HPDCACHE_REQ_AMO_MAX:
-                result = smax ? ld_data : st_data;
-                break;
-            case hpdcache_test_transaction_req::HPDCACHE_REQ_AMO_MAXU:
-                result = umax ? ld_data : st_data;
-                break;
-            case hpdcache_test_transaction_req::HPDCACHE_REQ_AMO_MIN:
-                result = smax ? st_data : ld_data;
-                break;
-            case hpdcache_test_transaction_req::HPDCACHE_REQ_AMO_MINU:
-                result = umax ? st_data : ld_data;
-                break;
-            default:
-                sc_assert(false && "unknown atomic operation");
-                return 0;
+        case hpdcache_test_transaction_req::HPDCACHE_REQ_AMO_SWAP:
+            result = st_data;
+            break;
+        case hpdcache_test_transaction_req::HPDCACHE_REQ_AMO_ADD:
+            result = ld_data + st_data;
+            break;
+        case hpdcache_test_transaction_req::HPDCACHE_REQ_AMO_AND:
+            result = ld_data & st_data;
+            break;
+        case hpdcache_test_transaction_req::HPDCACHE_REQ_AMO_OR:
+            result = ld_data | st_data;
+            break;
+        case hpdcache_test_transaction_req::HPDCACHE_REQ_AMO_XOR:
+            result = ld_data ^ st_data;
+            break;
+        case hpdcache_test_transaction_req::HPDCACHE_REQ_AMO_MAX:
+            result = smax ? ld_data : st_data;
+            break;
+        case hpdcache_test_transaction_req::HPDCACHE_REQ_AMO_MAXU:
+            result = umax ? ld_data : st_data;
+            break;
+        case hpdcache_test_transaction_req::HPDCACHE_REQ_AMO_MIN:
+            result = smax ? st_data : ld_data;
+            break;
+        case hpdcache_test_transaction_req::HPDCACHE_REQ_AMO_MINU:
+            result = umax ? st_data : ld_data;
+            break;
+        default:
+            sc_assert(false && "unknown atomic operation");
+            return 0;
         }
 
         return result;

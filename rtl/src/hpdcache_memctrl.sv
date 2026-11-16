@@ -1065,8 +1065,6 @@ import hpdcache_pkg::*;
     end else begin : gen_data_flush_read_tieoff
         assign data_flush_read_q = '0;
     end
-        
-        
 
     hpdcache_mux #(
         .NINPUT      (HPDcacheCfg.u.ways/HPDcacheCfg.u.dataWaysPerRamWord),

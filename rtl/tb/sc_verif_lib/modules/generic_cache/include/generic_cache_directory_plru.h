@@ -33,18 +33,18 @@
 
 class GenericCacheDirectoryPlru : public GenericCacheDirectoryBase
 {
-    bool* plru_m;
+    bool *plru_m;
 
-public:
-    GenericCacheDirectoryPlru(const std::string& name, size_t nways, size_t nsets, size_t nbytes)
-      : GenericCacheDirectoryBase(name, nways, nsets, nbytes)
+  public:
+    GenericCacheDirectoryPlru(const std::string &name, size_t nways, size_t nsets, size_t nbytes)
+        : GenericCacheDirectoryBase(name, nways, nsets, nbytes)
     {
         plru_m = new bool[nways * nsets];
     }
 
     ~GenericCacheDirectoryPlru() { delete[] plru_m; }
 
-    bool& getCachePlru(size_t way, size_t set) { return plru_m[way * sets_m + set]; }
+    bool &getCachePlru(size_t way, size_t set) { return plru_m[way * sets_m + set]; }
 
     void reset()
     {
@@ -57,7 +57,7 @@ public:
         }
     }
 
-    virtual bool repl(uint64_t addr, uint64_t* victim_tag, size_t* victim_way, size_t* victim_set)
+    virtual bool repl(uint64_t addr, uint64_t *victim_tag, size_t *victim_way, size_t *victim_set)
     {
         uint64_t tag;
         size_t set;

@@ -12,12 +12,13 @@
 #ifndef __HPDCACHE_TEST_SCOREBOARD_H__
 #define __HPDCACHE_TEST_SCOREBOARD_H__
 
+#include <verilated.h>
+
 #include <iostream>
 #include <map>
 #include <memory>
 #include <sstream>
 #include <systemc>
-#include <verilated.h>
 
 #include "generic_cache_directory_plru.h"
 #include "hpdcache_test_amo.h"
@@ -26,7 +27,7 @@
 #include "hpdcache_test_mem_resp_model_base.h"
 #include "hpdcache_test_sequence.h"
 #include "logger.h"
-#include "ram_model.h"
+#include "mem_model.h"
 
 // FIXME currently this cannot be set because there are some race conditions
 // badly handled. The race conditions are when there is a refill on a given
@@ -39,7 +40,7 @@
 
 class hpdcache_test_scoreboard : public sc_module
 {
-public:
+  public:
     sc_in<bool> clk_i;
 
     sc_fifo_in<hpdcache_test_transaction_req> core_req_i;
@@ -70,52 +71,22 @@ public:
     sc_out<bool> no_inflight_requests_o;
 
     hpdcache_test_scoreboard(sc_core::sc_module_name nm)
-      : sc_module(nm)
-      , core_req_i("core_req_i")
-      , core_resp_i("core_resp_i")
-      , mem_read_req_i("mem_read_req_i")
-      , mem_read_resp_i("mem_read_resp_i")
-      , mem_write_req_i("mem_write_req_i")
-      , mem_write_resp_i("mem_write_resp_i")
-      , nb_cycles(0)
-      , nb_cycles_effective(0)
-      , nb_core_req(0)
-      , nb_core_req_need_rsp(0)
-      , nb_core_resp(0)
-      , nb_mem_read_req(0)
-      , nb_mem_read_resp(0)
-      , nb_mem_write_req(0)
-      , nb_mem_write_resp(0)
-      , nb_error(0)
-      , sb_error_limit_m(0)
-      , evt_cache_write_miss(0)
-      , evt_cache_read_miss(0)
-      , evt_cache_dir_unc_err(0)
-      , evt_cache_dir_cor_err(0)
-      , evt_cache_dat_unc_err(0)
-      , evt_cache_dat_cor_err(0)
-      , evt_scrub_complete(0)
-      , evt_uncached_req(0)
-      , evt_cmo_req(0)
-      , evt_write_req(0)
-      , evt_read_req(0)
-      , evt_prefetch_req(0)
-      , evt_req_on_hold(0)
-      , evt_rtab_rollback(0)
-      , evt_stall_refill(0)
-      , evt_stall(0)
-      , seq(nullptr)
-      , mem_resp_model(nullptr)
-      , sc_is_atomic(false)
-      ,
+        : sc_module(nm), core_req_i("core_req_i"), core_resp_i("core_resp_i"),
+          mem_read_req_i("mem_read_req_i"), mem_read_resp_i("mem_read_resp_i"),
+          mem_write_req_i("mem_write_req_i"), mem_write_resp_i("mem_write_resp_i"), nb_cycles(0),
+          nb_cycles_effective(0), nb_core_req(0), nb_core_req_need_rsp(0), nb_core_resp(0),
+          nb_mem_read_req(0), nb_mem_read_resp(0), nb_mem_write_req(0), nb_mem_write_resp(0),
+          nb_error(0), sb_error_limit_m(0), evt_cache_write_miss(0), evt_cache_read_miss(0),
+          evt_cache_dir_unc_err(0), evt_cache_dir_cor_err(0), evt_cache_dat_unc_err(0),
+          evt_cache_dat_cor_err(0), evt_scrub_complete(0), evt_uncached_req(0), evt_cmo_req(0),
+          evt_write_req(0), evt_read_req(0), evt_prefetch_req(0), evt_req_on_hold(0),
+          evt_rtab_rollback(0), evt_stall_refill(0), evt_stall(0), seq(nullptr),
+          mem_resp_model(nullptr), sc_is_atomic(false),
 #if ENABLE_CACHE_DIR_VERIF
-      cache_dir_m(std::make_shared<GenericCacheDirectoryPlru>("hpdcache_dir",
-                                                              HPDCACHE_NWAYS,
-                                                              HPDCACHE_NSETS,
-                                                              HPDCACHE_NWORDS * 8))
-      ,
+          cache_dir_m(std::make_shared<GenericCacheDirectoryPlru>(
+              "hpdcache_dir", HPDCACHE_NWAYS, HPDCACHE_NSETS, HPDCACHE_NWORDS * 8)),
 #endif
-      ram_m(std::make_shared<ram_t>("ram"))
+          ram_m(std::make_shared<mem_model>("scoreboard_ram", mem_model::MEM_MODEL_NO_INIT))
     {
         SC_THREAD(core_req_process);
         SC_THREAD(core_resp_process);
@@ -219,7 +190,7 @@ public:
 
     void set_error_limit(size_t error_limit) { sb_error_limit_m = error_limit; }
 
-private:
+  private:
     uint64_t nb_cycles;
     uint64_t nb_cycles_effective;
     uint64_t nb_core_req;
@@ -253,9 +224,10 @@ private:
     std::shared_ptr<hpdcache_test_sequence> seq;
     std::shared_ptr<hpdcache_test_mem_resp_model_base> mem_resp_model;
 
+    static constexpr unsigned int HPDCACHE_WORD_BYTES = HPDCACHE_WORD_WIDTH / 8;
     static constexpr unsigned int CORE_REQ_WORDS = HPDCACHE_REQ_WORDS;
-    static constexpr unsigned int CORE_REQ_WORD_BYTES = HPDCACHE_WORD_WIDTH / 8;
-    static constexpr unsigned int CORE_REQ_BYTES = CORE_REQ_WORDS * CORE_REQ_WORD_BYTES;
+    static constexpr unsigned int CORE_REQ_BYTES = CORE_REQ_WORDS * HPDCACHE_WORD_BYTES;
+    static constexpr unsigned int CORE_REQ_DWORDS = (CORE_REQ_BYTES + 7) / 8;
 
     struct inflight_entry_t
     {
@@ -274,10 +246,10 @@ private:
         unsigned op;
         bool is_uncacheable;
         uint8_t bytes;
-        uint64_t wdata[CORE_REQ_WORDS];
-        uint8_t be[CORE_REQ_WORDS];
-        uint64_t rdata[CORE_REQ_WORDS];
-        uint8_t rv[CORE_REQ_WORDS];
+        uint64_t wdata[CORE_REQ_DWORDS];
+        uint8_t be[CORE_REQ_DWORDS];
+        uint64_t rdata[CORE_REQ_DWORDS];
+        uint8_t rv[CORE_REQ_DWORDS];
 
         const std::string to_string() const
         {
@@ -295,7 +267,7 @@ private:
             return ss.str();
         }
 
-        friend std::ostream& operator<<(std::ostream& os, const inflight_entry_t& req)
+        friend std::ostream &operator<<(std::ostream &os, const inflight_entry_t &req)
         {
             os << req.to_string();
             return os;
@@ -308,7 +280,7 @@ private:
         uint8_t bytes;
         bool is_uncacheable;
         bool is_error;
-        const inflight_entry_t* core_req_ptr;
+        const inflight_entry_t *core_req_ptr;
     };
 
     struct lrsc_reservation_buf_t
@@ -321,8 +293,10 @@ private:
 
     static inline bool within_region(uint64_t addr, uint64_t base, uint64_t end)
     {
-        if (addr < base) return false;
-        if (addr > end) return false;
+        if (addr < base)
+            return false;
+        if (addr > end)
+            return false;
         return true;
     }
 
@@ -337,7 +311,6 @@ private:
     typedef std::pair<uint32_t, inflight_entry_t> inflight_map_pair_t;
     typedef std::map<uint64_t, inflight_mem_entry_t> inflight_mem_map_t;
     typedef std::pair<uint32_t, inflight_mem_entry_t> inflight_mem_map_pair_t;
-    typedef ram_model<SCOREBOARD_RAM_SIZE> ram_t;
 
 #if ENABLE_CACHE_DIR_VERIF
     std::shared_ptr<GenericCacheDirectoryPlru> cache_dir_m;
@@ -347,7 +320,7 @@ private:
     inflight_mem_map_t inflight_mem_read_m;
     inflight_mem_map_t inflight_mem_write_m;
     lrsc_reservation_buf_t lrsc_buf_m;
-    std::shared_ptr<ram_t> ram_m;
+    std::shared_ptr<mem_model> ram_m;
 
     sc_fifo<inflight_entry_t> inflight_amo_req_m;
     bool sc_is_atomic;
@@ -359,27 +332,42 @@ private:
     void perf_events_process()
     {
         nb_cycles++;
-        if (evt_cache_write_miss_i.read()) evt_cache_write_miss++;
-        if (evt_cache_read_miss_i.read()) evt_cache_read_miss++;
-        if (evt_cache_dir_unc_err_i.read()) evt_cache_dir_unc_err++;
-        if (evt_cache_dir_cor_err_i.read()) evt_cache_dir_cor_err++;
-        if (evt_cache_dat_unc_err_i.read()) evt_cache_dat_unc_err++;
-        if (evt_cache_dat_cor_err_i.read()) evt_cache_dat_cor_err++;
-        if (evt_scrub_complete_i.read()) evt_scrub_complete++;
-        if (evt_uncached_req_i.read()) evt_uncached_req++;
-        if (evt_cmo_req_i.read()) evt_cmo_req++;
-        if (evt_write_req_i.read()) evt_write_req++;
-        if (evt_read_req_i.read()) evt_read_req++;
-        if (evt_prefetch_req_i.read()) evt_prefetch_req++;
-        if (evt_req_on_hold_i.read()) evt_req_on_hold++;
-        if (evt_rtab_rollback_i.read()) evt_rtab_rollback++;
-        if (evt_stall_refill_i.read()) evt_stall_refill++;
-        if (evt_stall_i.read()) evt_stall++;
+        if (evt_cache_write_miss_i.read())
+            evt_cache_write_miss++;
+        if (evt_cache_read_miss_i.read())
+            evt_cache_read_miss++;
+        if (evt_cache_dir_unc_err_i.read())
+            evt_cache_dir_unc_err++;
+        if (evt_cache_dir_cor_err_i.read())
+            evt_cache_dir_cor_err++;
+        if (evt_cache_dat_unc_err_i.read())
+            evt_cache_dat_unc_err++;
+        if (evt_cache_dat_cor_err_i.read())
+            evt_cache_dat_cor_err++;
+        if (evt_scrub_complete_i.read())
+            evt_scrub_complete++;
+        if (evt_uncached_req_i.read())
+            evt_uncached_req++;
+        if (evt_cmo_req_i.read())
+            evt_cmo_req++;
+        if (evt_write_req_i.read())
+            evt_write_req++;
+        if (evt_read_req_i.read())
+            evt_read_req++;
+        if (evt_prefetch_req_i.read())
+            evt_prefetch_req++;
+        if (evt_req_on_hold_i.read())
+            evt_req_on_hold++;
+        if (evt_rtab_rollback_i.read())
+            evt_rtab_rollback++;
+        if (evt_stall_refill_i.read())
+            evt_stall_refill++;
+        if (evt_stall_i.read())
+            evt_stall++;
     }
 
     void check_inflight_requests()
     {
-
         const bool no_inflight =
             inflight_mem_write_m.empty() && inflight_mem_read_m.empty() && inflight_m.empty();
 
@@ -393,7 +381,7 @@ private:
         return (sc_core::sc_report_handler::get_verbosity_level() >= verbosity);
     }
 
-    void print_error(const std::string& msg)
+    void print_error(const std::string &msg)
     {
         std::cout << sc_time_stamp().to_string() << " / SB_ERROR: " << msg << std::endl;
 
@@ -406,7 +394,7 @@ private:
         }
     }
 
-    void print_debug(const std::string& msg)
+    void print_debug(const std::string &msg)
     {
         std::cout << sc_time_stamp().to_string() << " / SB_DEBUG: " << msg << std::endl;
     }
@@ -423,16 +411,18 @@ private:
             }
 
             //  count the number of requests that need a response
-            if (req.req_need_rsp) nb_core_req_need_rsp++;
+            if (req.req_need_rsp)
+                nb_core_req_need_rsp++;
 
             uint32_t req_id = req.req_tid.to_uint();
             uint64_t req_addr = req.req_addr.to_uint64();
+            size_t req_bytes = 1 << req.req_size.to_uint();
 
             inflight_map_t::const_iterator it = inflight_m.find(req_id);
             if (it != inflight_m.end()) {
                 std::stringstream ss;
-                ss << "core request ID "
-                   << "0x" << std::hex << req_id << std::dec << " matches an inflight request";
+                ss << "core request ID " << "0x" << std::hex << req_id << std::dec
+                   << " matches an inflight request";
                 print_error(ss.str());
                 continue;
             }
@@ -440,28 +430,29 @@ private:
             if (req.is_cmo()) {
 #if ENABLE_CACHE_DIR_VERIF
                 switch (req.req_size.to_uint()) {
-                    case hpdcache_test_transaction_req::HPDCACHE_CMO_INVAL_NLINE: {
-                        cache_dir_m->inval(req_addr);
+                case hpdcache_test_transaction_req::HPDCACHE_CMO_INVAL_NLINE: {
+                    cache_dir_m->inval(req_addr);
+                    break;
+                }
+                case hpdcache_test_transaction_req::HPDCACHE_CMO_INVAL_SET_WAY: {
+                    uint64_t wdata = req.req_wdata.range(HPDCACHE_NWAYS - 1, 0).to_uint64();
+                    if (wdata == 0)
                         break;
-                    }
-                    case hpdcache_test_transaction_req::HPDCACHE_CMO_INVAL_SET_WAY: {
-                        uint64_t wdata = req.req_wdata.range(HPDCACHE_NWAYS - 1, 0).to_uint64();
-                        if (wdata == 0) break;
-                        for (int way = 0; way < HPDCACHE_NWAYS; way++) {
-                            if ((wdata & (1 << way)) != 0) {
-                                cache_dir_m->inval(way, cache_dir_m->getAddrSet(req_addr));
-                            }
+                    for (int way = 0; way < HPDCACHE_NWAYS; way++) {
+                        if ((wdata & (1 << way)) != 0) {
+                            cache_dir_m->inval(way, cache_dir_m->getAddrSet(req_addr));
                         }
-                        break;
                     }
-                    case hpdcache_test_transaction_req::HPDCACHE_CMO_INVAL_ALL: {
-                        for (int way = 0; way < HPDCACHE_NWAYS; way++) {
-                            for (int set = 0; set < HPDCACHE_NSETS; set++) {
-                                cache_dir_m->inval(way, set);
-                            }
+                    break;
+                }
+                case hpdcache_test_transaction_req::HPDCACHE_CMO_INVAL_ALL: {
+                    for (int way = 0; way < HPDCACHE_NWAYS; way++) {
+                        for (int set = 0; set < HPDCACHE_NSETS; set++) {
+                            cache_dir_m->inval(way, set);
                         }
-                        break;
                     }
+                    break;
+                }
                 }
 #endif
                 if (!req.req_need_rsp) {
@@ -476,12 +467,16 @@ private:
 #if ENABLE_CACHE_DIR_VERIF
             size_t hit_way;
             size_t hit_set;
-            if ((req.is_load() || req.is_store() || req.is_amo_lr() || req.is_amo_sc()
-                 || req.is_amo())
-                && !req.is_uncacheable()) {
+            if ((req.is_load() || req.is_store() || req.is_amo_lr() || req.is_amo_sc() ||
+                 req.is_amo()) &&
+                !req.is_uncacheable()) {
                 hit = cache_dir_m->access(req_addr, &hit_way, &hit_set);
             }
 #endif
+
+            const int _byte = (req_addr % 8);
+            const int _word = (req_addr / 8) % CORE_REQ_DWORDS;
+            const int _words = (req_bytes + 7) / 8;
 
             inflight_entry_t e;
             e.time = nb_cycles;
@@ -496,17 +491,21 @@ private:
             e.is_amo_sc = req.is_amo_sc();
             e.is_uncacheable = req.req_uncacheable;
             e.is_error = false;
-            e.bytes = 1 << req.req_size.to_uint();
+            e.bytes = req_bytes;
             e.op = req.req_op.to_uint();
             if (req.is_store() || req.is_amo_sc() || req.is_amo()) {
-                for (int i = 0; i < CORE_REQ_WORDS; i++) {
+                for (int i = 0; i < CORE_REQ_DWORDS; i++) {
                     e.wdata[i] =
                         req.req_wdata
                             .range((i + 1) * HPDCACHE_WORD_WIDTH - 1, i * HPDCACHE_WORD_WIDTH)
                             .to_uint64();
                     e.be[i] =
-                        req.req_be.range((i + 1) * CORE_REQ_WORD_BYTES - 1, i * CORE_REQ_WORD_BYTES)
+                        req.req_be.range((i + 1) * HPDCACHE_WORD_BYTES - 1, i * HPDCACHE_WORD_BYTES)
                             .to_uint();
+                    if ((CORE_REQ_BYTES < 8) && ((req_addr % 8) > 3)) {
+                        e.wdata[i] <<= 32;
+                        e.be[i] <<= 4;
+                    }
                 }
             }
 
@@ -515,28 +514,27 @@ private:
                 e.is_error = mem_resp_model->within_error_region(e.addr, e.addr + e.bytes);
             }
 
-            uint64_t aligned_addr = align_to(req_addr, HPDCACHE_REQ_DATA_WIDTH / 8);
-            if (!e.is_error && (req.is_load() || req.is_amo_lr() || req.is_amo())) {
-                ram_m->read(reinterpret_cast<uint8_t*>(e.rdata),
-                            HPDCACHE_REQ_DATA_WIDTH / 8,
-                            aligned_addr,
-                            e.rv);
+            uint64_t aligned_addr = align_to(req_addr, CORE_REQ_DWORDS * 8);
 
+            if (!e.is_error && (req.is_load() || req.is_amo_lr() || req.is_amo())) {
+                memset(e.rdata, 0, sizeof(e.rdata));
+                memset(e.rv, 0, sizeof(e.rv));
+                for (int i = _word; i < (_word + _words); i++) {
+                    e.rdata[i] = ram_m->readMemory(aligned_addr + i * 8, &e.rv[i]);
 #if DEBUG_HPDCACHE_TEST_SCOREBOARD
-                if (check_verbosity(sc_core::SC_DEBUG)) {
-                    for (int i = 0; i < CORE_REQ_WORDS; i++) {
+                    if (check_verbosity(sc_core::SC_DEBUG)) {
                         if (e.rv[i]) {
                             std::stringstream ss;
-                            ss << "check response for @0x" << std::hex
-                               << aligned_addr + i * CORE_REQ_WORD_BYTES << std::dec
-                               << " / expected = 0x" << std::hex << e.rdata[i] << std::dec
-                               << " / valid = 0x" << std::hex << (unsigned)e.rv[i] << std::dec;
+                            ss << "check response for @0x" << std::hex << aligned_addr + i * 8
+                               << std::dec << " / expected = 0x" << std::hex << e.rdata[i]
+                               << std::dec << " / valid = 0x" << std::hex << (unsigned)e.rv[i]
+                               << std::dec;
 
                             print_debug(ss.str());
                         }
                     }
-                }
 #endif
+                }
             }
 
             //  Compute if the SC address matches the one of a previous LR reservation
@@ -575,9 +573,9 @@ private:
                 lrsc_entry_base = get_offset(e.addr) >> 3;
                 lrsc_entry_end = lrsc_entry_base + lrsc_entry_words;
 
-                addr_match = lrsc_buf_m.valid && (lrsc_rsrv_nline == lrsc_entry_nline)
-                             && (lrsc_rsrv_word >= lrsc_entry_base)
-                             && (lrsc_rsrv_word < lrsc_entry_end);
+                addr_match = lrsc_buf_m.valid && (lrsc_rsrv_nline == lrsc_entry_nline) &&
+                             (lrsc_rsrv_word >= lrsc_entry_base) &&
+                             (lrsc_rsrv_word < lrsc_entry_end);
 
                 if (req.is_amo_sc()) {
                     //  SC can get an error response only if there is a valid
@@ -617,26 +615,22 @@ private:
 
             //  keep track of written data
             if (req.is_store() && !e.is_error) {
-                ram_m->write(reinterpret_cast<uint8_t*>(e.wdata),
-                             reinterpret_cast<uint8_t*>(e.be),
-                             HPDCACHE_REQ_DATA_WIDTH / 8,
-                             aligned_addr);
+                for (int i = _word; i < (_word + _words); i++) {
+                    ram_m->writeMemory(aligned_addr + i * 8, e.wdata[i], e.be[i]);
 
 #if DEBUG_HPDCACHE_TEST_SCOREBOARD
-                if (check_verbosity(sc_core::SC_DEBUG)) {
-                    for (int i = 0; i < CORE_REQ_WORDS; i++) {
+                    if (check_verbosity(sc_core::SC_DEBUG)) {
                         if (e.be[i]) {
                             std::stringstream ss;
-                            ss << "store sb.mem @0x" << std::hex
-                               << aligned_addr + i * CORE_REQ_WORD_BYTES << std::dec << " = 0x"
-                               << std::hex << e.wdata[i] << std::dec << " / be = 0x" << std::hex
-                               << (unsigned)e.be[i] << std::dec;
+                            ss << "store sb.mem @0x" << std::hex << aligned_addr + i * 8 << std::dec
+                               << " = 0x" << std::hex << e.wdata[i] << std::dec << " / be = 0x"
+                               << std::hex << (unsigned)e.be[i] << std::dec;
 
                             print_debug(ss.str());
                         }
                     }
-                }
 #endif
+                }
             }
 
             if (req.req_need_rsp) {
@@ -655,7 +649,6 @@ private:
         for (;;) {
             resp = core_resp_i.read();
             nb_core_resp++;
-
             nb_cycles_effective = nb_cycles;
 
             if (check_verbosity(sc_core::SC_MEDIUM)) {
@@ -666,14 +659,13 @@ private:
             inflight_map_t::const_iterator it = inflight_m.find(resp.rsp_tid.to_uint());
             if (it == inflight_m.end()) {
                 std::stringstream ss;
-                ss << "core response ID "
-                   << "0x" << std::hex << resp.rsp_tid.to_uint() << std::dec
+                ss << "core response ID " << "0x" << std::hex << resp.rsp_tid.to_uint() << std::dec
                    << " does not match any inflight request";
                 print_error(ss.str());
                 continue;
             }
 
-            const inflight_entry_t& e = it->second;
+            const inflight_entry_t &e = it->second;
 
 #if DEBUG_HPDCACHE_TEST_SCOREBOARD
             if (check_verbosity(sc_core::SC_DEBUG)) {
@@ -687,13 +679,17 @@ private:
             }
 
             if (!e.is_error) {
-                const uint64_t aligned_addr = align_to(e.addr, CORE_REQ_BYTES);
-                const int _word = (e.addr / CORE_REQ_WORD_BYTES) % CORE_REQ_WORDS;
-                const int _byte = e.addr % CORE_REQ_BYTES;
+                const int align = CORE_REQ_BYTES > 8 ? CORE_REQ_BYTES : 8;
+                const uint64_t aligned_addr = align_to(e.addr, align);
+                const int _word = (e.addr / 8) % CORE_REQ_DWORDS;
+                const int _byte = e.addr % align;
 
                 //  check the response status for SC operations
                 bool sc_ok;
                 if (e.is_amo_sc) {
+                    const uint64_t sc_addr = aligned_addr + _word * 8;
+                    ;
+
                     uint64_t sc_resp = resp.rsp_rdata
                                            .range((_word + 1) * HPDCACHE_WORD_WIDTH - 1,
                                                   _word * HPDCACHE_WORD_WIDTH)
@@ -704,10 +700,7 @@ private:
 
                     sc_ok = e.is_atomic && sc_is_atomic;
                     if (sc_ok) {
-                        ram_m->write(reinterpret_cast<const uint8_t*>(&e.wdata[_word]),
-                                     reinterpret_cast<const uint8_t*>(&e.be[_word]),
-                                     CORE_REQ_WORD_BYTES,
-                                     align_to(e.addr, CORE_REQ_WORD_BYTES));
+                        ram_m->writeMemory(sc_addr, e.wdata[_word], e.be[_word]);
 
                         //  check response status
                         if (sc_resp != 0) {
@@ -716,33 +709,47 @@ private:
                     } else if (sc_resp != 1) {
                         print_error("response shall be SC_FAILURE");
                     }
+
+#if DEBUG_HPDCACHE_TEST_SCOREBOARD
+                    if (check_verbosity(sc_core::SC_DEBUG)) {
+                        if (e.be[_word]) {
+                            std::stringstream ss;
+                            ss << "sc sb.mem @0x" << std::hex << sc_addr << std::dec << " = 0x"
+                               << std::hex << e.wdata[_word] << std::dec << " / be = 0x" << std::hex
+                               << (unsigned)e.be[_word] << std::dec;
+                            print_debug(ss.str());
+                        }
+                    }
+#endif
                 }
 
                 //  check the response data
                 if (e.is_read || e.is_amo || e.is_amo_lr) {
-                    uint64_t rdata[CORE_REQ_WORDS];
-                    for (int i = 0; i < CORE_REQ_WORDS; i++) {
+                    uint64_t rdata[CORE_REQ_DWORDS];
+                    for (int i = 0; i < CORE_REQ_DWORDS; i++) {
                         rdata[i] =
                             resp.rsp_rdata
                                 .range((i + 1) * HPDCACHE_WORD_WIDTH - 1, i * HPDCACHE_WORD_WIDTH)
                                 .to_uint64();
+                        if ((CORE_REQ_BYTES < 8) && (_byte > 3)) {
+                            rdata[i] <<= 32;
+                        }
                     }
 
                     //  check the received data
                     //  {{{
                     for (int i = _byte; i < (_byte + e.bytes); i++) {
-                        const uint8_t recv = reinterpret_cast<const uint8_t*>(rdata)[i];
-                        const uint8_t expc = reinterpret_cast<const uint8_t*>(e.rdata)[i];
-                        const uint8_t rv =
-                            reinterpret_cast<const uint8_t*>(e.rv)[i / CORE_REQ_WORD_BYTES];
+                        const uint8_t recv = reinterpret_cast<const uint8_t *>(rdata)[i];
+                        const uint8_t expc = reinterpret_cast<const uint8_t *>(e.rdata)[i];
+                        const uint8_t rv = e.rv[i / 8];
 
-                        if ((rv >> (i % CORE_REQ_WORD_BYTES)) & 0x1) {
+                        if ((rv >> (i % 8)) & 0x1) {
                             if (recv != expc) {
                                 std::stringstream ss;
-                                ss << "response data is wrong"
-                                   << " / @0x" << std::hex << aligned_addr + i << std::dec
-                                   << " / actual = 0x" << std::hex << (unsigned)recv << std::dec
-                                   << " / expected = 0x" << std::hex << (unsigned)expc << std::dec;
+                                ss << "response data is wrong" << " / @0x" << std::hex
+                                   << aligned_addr + i << std::dec << " / actual = 0x" << std::hex
+                                   << (unsigned)recv << std::dec << " / expected = 0x" << std::hex
+                                   << (unsigned)expc << std::dec;
                                 print_error(ss.str());
                             }
                         }
@@ -752,33 +759,32 @@ private:
                     //  update the memory with the computed AMO word
                     //  {{{
                     if (e.is_amo) {
-                        unsigned offset = (e.addr % CORE_REQ_WORD_BYTES) * CORE_REQ_WORD_BYTES;
+                        unsigned offset = (e.addr % 8) * 8;
+                        uint64_t amo_addr = aligned_addr + _word * 8;
                         uint64_t amo_new = e.wdata[_word];
                         uint64_t amo_old = rdata[_word];
+                        uint64_t amo_res;
+                        uint8_t amo_be;
 
                         if (e.bytes == 4) {
                             amo_new = static_cast<uint32_t>(amo_new >> offset);
                             amo_old = static_cast<uint32_t>(amo_old >> offset);
                         }
-                        uint64_t amo_res =
-                            hpdcache_test_amo::compute_amo(e.op, amo_old, amo_new, e.bytes);
-                        uint8_t amo_be = e.be[_word];
-
-                        amo_res = (amo_res << offset);
-                        ram_m->write(reinterpret_cast<uint8_t*>(&amo_res),
-                                     reinterpret_cast<uint8_t*>(&amo_be),
-                                     CORE_REQ_WORD_BYTES,
-                                     align_to(e.addr, CORE_REQ_WORD_BYTES));
+                        amo_res = hpdcache_test_amo::compute_amo(e.op, amo_old, amo_new, e.bytes);
+                        amo_res <<= offset;
+                        amo_be = e.be[_word];
+                        ram_m->writeMemory(amo_addr, amo_res, amo_be);
 
 #if DEBUG_HPDCACHE_TEST_SCOREBOARD
                         if (check_verbosity(sc_core::SC_DEBUG)) {
                             if (amo_be) {
                                 std::stringstream ss;
                                 ss << hpdcache_test_transaction_req::op_to_string(e.op)
-                                   << " sb.mem @0x" << std::hex
-                                   << align_to(e.addr, CORE_REQ_WORD_BYTES) << std::dec << " = 0x"
+                                   << " sb.mem @0x" << std::hex << amo_addr << std::dec << " = 0x"
                                    << std::hex << amo_res << std::dec << " / be = 0x" << std::hex
-                                   << (unsigned)amo_be << std::dec;
+                                   << (unsigned)amo_be << std::dec << " / amo(old) = 0x" << std::hex
+                                   << amo_old << std::dec << " / amo(new) = 0x" << std::hex
+                                   << amo_new << std::dec;
 
                                 print_debug(ss.str());
                             }
@@ -813,16 +819,16 @@ private:
             inflight_mem_map_t::const_iterator it = inflight_mem_read_m.find(req_id);
             if (it != inflight_mem_read_m.end()) {
                 std::stringstream ss;
-                ss << "memory read request ID "
-                   << "0x" << std::hex << req_id << std::dec << " matches an inflight request";
+                ss << "memory read request ID " << "0x" << std::hex << req_id << std::dec
+                   << " matches an inflight request";
                 print_error(ss.str());
                 continue;
             }
 
             //  find the associated core request
-            const inflight_entry_t* core_req = nullptr;
-            for (const auto& cr : inflight_m) {
-                const inflight_entry_t& _cr = cr.second;
+            const inflight_entry_t *core_req = nullptr;
+            for (const auto &cr : inflight_m) {
+                const inflight_entry_t &_cr = cr.second;
                 if (get_nline(_cr.addr) == get_nline(req.addr)) {
                     //  get first occurrence
                     if (core_req == nullptr) {
@@ -873,19 +879,18 @@ private:
                 std::cout << sc_time_stamp().to_string() << " / " << resp << std::endl;
             }
 
-            inflight_mem_map_t::const_iterator it = inflight_mem_read_m.find(resp.id);
+            inflight_mem_map_t::iterator it = inflight_mem_read_m.find(resp.id);
             if (it == inflight_mem_read_m.end()) {
                 std::stringstream ss;
-                ss << "memory read response ID "
-                   << "0x" << std::hex << resp.id << std::dec
+                ss << "memory read response ID " << "0x" << std::hex << resp.id << std::dec
                    << " does not match any inflight request";
                 print_error(ss.str());
                 continue;
             }
 
             //  get a pointer to the originating core request
-            const inflight_mem_entry_t* mem_req = &it->second;
-            const inflight_entry_t* core_req = mem_req->core_req_ptr;
+            inflight_mem_entry_t *mem_req = &it->second;
+            const inflight_entry_t *core_req = mem_req->core_req_ptr;
 
 #if ENABLE_CACHE_DIR_VERIF
             if (!mem_req->is_uncacheable) {
@@ -941,40 +946,43 @@ private:
                 const int MEM_WORDS = HPDCACHE_MEM_DATA_WIDTH / 64;
                 const int MEM_BYTES = HPDCACHE_MEM_DATA_WIDTH / 8;
                 const uint64_t aligned_addr = align_to(mem_req->addr, MEM_BYTES);
-                const int _word = (mem_req->addr / MEM_BYTES) % MEM_WORDS;
-                const int _byte = mem_req->addr % MEM_BYTES;
+                const int _word = (mem_req->addr / 8) % MEM_WORDS;
+                const int _byte = (mem_req->addr % 8);
+                const int _words = (mem_req->bytes + 7) / 8;
+
+#if DEBUG_HPDCACHE_TEST_SCOREBOARD
+                if (check_verbosity(sc_core::SC_DEBUG)) {
+                    std::stringstream ss;
+                    ss << std::hex << "mem_resp @ = 0x" << mem_req->addr << std::dec << std::hex
+                       << " / @aligned = 0x" << aligned_addr << std::dec << " / word = " << _word
+                       << " / byte = " << _byte << " / words = " << _words << std::endl;
+                    print_debug(ss.str());
+                }
+#endif
 
                 //  update uninitialized bytes of the scoreboard memory with the
                 //  response from the external memory
                 //  {{{
                 uint64_t rdata[MEM_WORDS];
+                uint8_t vmask[MEM_WORDS];
                 for (int i = 0; i < MEM_WORDS; i++) {
                     rdata[i] = resp.data.range((i + 1) * 64 - 1, i * 64).to_uint64();
-                }
-
-                uint8_t unset[MEM_WORDS];
-                memset(unset, 0, sizeof(unset));
-                for (int i = 0; i < MEM_BYTES; i++) {
-                    unset[i / 8] |= (ram_m->getBmap(aligned_addr + i) ? 0x0 : 0x1) << (i % 8);
+                    vmask[i] = ram_m->readBytemask(aligned_addr + i * 8);
                 }
 
                 uint8_t be[MEM_WORDS];
-                int bytes = mem_req->bytes;
+                uint8_t mask;
+                mask = (mem_req->bytes > 8) ? 0xff : ((1UL << mem_req->bytes) - 1) << _byte;
                 memset(be, 0, sizeof(be));
-                for (int i = _word; bytes > 0; i++) {
-                    uint8_t mask = static_cast<uint8_t>(((1UL << bytes) - 1) << (_byte - i * 8));
-                    be[i] = mask & unset[i];
-                    bytes -= 8;
+                for (int i = _word; i < (_word + _words); i++) {
+                    be[i] = mask & ~vmask[i];
+                    mask = 0xff;
                 }
 
-                ram_m->write(reinterpret_cast<uint8_t*>(rdata),
-                             reinterpret_cast<uint8_t*>(be),
-                             MEM_BYTES,
-                             aligned_addr);
-
+                for (int i = 0; i < MEM_WORDS; i++) {
+                    ram_m->writeMemory(aligned_addr + i * 8, rdata[i], be[i]);
 #if DEBUG_HPDCACHE_TEST_SCOREBOARD
-                if (check_verbosity(sc_core::SC_DEBUG)) {
-                    for (int i = 0; i < MEM_WORDS; i++) {
+                    if (check_verbosity(sc_core::SC_DEBUG)) {
                         if (be[i]) {
                             std::stringstream ss;
                             ss << "update sb.mem @0x" << std::hex << aligned_addr + i * 8
@@ -983,14 +991,16 @@ private:
                             print_debug(ss.str());
                         }
                     }
-                }
 #endif
+                }
                 //  }}}
             }
 
             //  remove request from the inflight table
             if (resp.last) {
                 inflight_mem_read_m.erase(it);
+            } else {
+                mem_req->addr = mem_req->addr + mem_req->bytes;
             }
         }
     }
@@ -1012,16 +1022,16 @@ private:
             inflight_mem_map_t::const_iterator it = inflight_mem_write_m.find(req_id);
             if (it != inflight_mem_write_m.end()) {
                 std::stringstream ss;
-                ss << "memory write request ID "
-                   << "0x" << std::hex << req_id << std::dec << " matches an inflight request";
+                ss << "memory write request ID " << "0x" << std::hex << req_id << std::dec
+                   << " matches an inflight request";
                 print_error(ss.str());
                 continue;
             }
 
             //  find the associated core request
-            const inflight_entry_t* core_req = nullptr;
-            for (const auto& cr : inflight_m) {
-                const inflight_entry_t& _cr = cr.second;
+            const inflight_entry_t *core_req = nullptr;
+            for (const auto &cr : inflight_m) {
+                const inflight_entry_t &_cr = cr.second;
                 if (get_nline(_cr.addr) == get_nline(req.addr)) {
                     //  get first occurrence
                     if (core_req == nullptr) {
@@ -1095,8 +1105,7 @@ private:
             inflight_mem_map_t::const_iterator it = inflight_mem_write_m.find(resp.id);
             if (it == inflight_mem_write_m.end()) {
                 std::stringstream ss;
-                ss << "memory write response ID "
-                   << "0x" << std::hex << resp.id << std::dec
+                ss << "memory write response ID " << "0x" << std::hex << resp.id << std::dec
                    << " does not match any inflight request";
                 print_error(ss.str());
                 continue;

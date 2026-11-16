@@ -12,23 +12,53 @@
 #ifndef __HPDCACHE_TEST_RANDOM_SEQ_H__
 #define __HPDCACHE_TEST_RANDOM_SEQ_H__
 
-#include "hpdcache_test_defs.h"
-#include "hpdcache_test_sequence.h"
-#include "scv.h"
+#include <random>
 #include <systemc>
+
+#include "hpdcache_test_defs.h"
+#include "hpdcache_test_enum_distribution.h"
+#include "hpdcache_test_sequence.h"
 
 #define HPDCACHE_TEST_SEQUENCE_ENABLE_ERROR_SEGMENTS 1
 #define HPDCACHE_TEST_SEQUENCE_AMO_SUPPORT true
 
 class hpdcache_test_random_seq : public hpdcache_test_sequence
 {
-public:
+  public:
     hpdcache_test_random_seq(sc_core::sc_module_name nm)
-      : hpdcache_test_sequence(nm, "random_seq")
+        : hpdcache_test_sequence(nm, "random_seq"), delay_dist(2), amo_sc_do_dist(.75),
+          need_rsp_dist(.95), size_dist(0, LOG2_REQ_DATA_BYTES), fault_inj_dist(.01),
+          fault_inj_way_dist(0, HPDCACHE_WAYS - 1), fault_inj_double_dist(.05), wr_policy_dist(),
+          seg_dist(), op_dist()
     {
         SC_THREAD(run);
         sensitive << clk_i.pos();
 
+        init_wr_policy();
+        init_mem_segs(HPDCACHE_TEST_SEQUENCE_AMO_SUPPORT);
+        init_op_dist(HPDCACHE_TEST_SEQUENCE_AMO_SUPPORT);
+        init_fault_inj();
+    }
+
+    void init_fault_inj()
+    {
+#if CONF_HPDCACHE_TEST_FAULT_INJ_DIR
+        fault_inj_domain_dist.add_value_weight(hpdcache_fault_injection::domain_e::CACHE_DIR, 20);
+#endif
+        fault_inj_domain_dist.add_value_weight(hpdcache_fault_injection::domain_e::CACHE_DAT, 80);
+        fault_inj_domain_dist.init(rg);
+    }
+
+    void init_wr_policy()
+    {
+        wr_policy_dist.add_value_weight(hpdcache_test_transaction_req::HPDCACHE_WR_POLICY_AUTO, 6);
+        wr_policy_dist.add_value_weight(hpdcache_test_transaction_req::HPDCACHE_WR_POLICY_WB, 2);
+        wr_policy_dist.add_value_weight(hpdcache_test_transaction_req::HPDCACHE_WR_POLICY_WT, 2);
+        wr_policy_dist.init(rg);
+    }
+
+    void init_mem_segs(bool amo_supported)
+    {
         seg[0].set_base(0x00000000ULL);
         seg[0].set_length(0x00004000ULL);
         seg[0].set_uncached(false);
@@ -53,155 +83,72 @@ public:
         seg[3].set_amo_supported(HPDCACHE_TEST_SEQUENCE_AMO_SUPPORT);
         seg[3].set_wr_policy_hint(hpdcache_test_memory_segment::WR_POLICY_AUTO);
 
-        hpdcache_test_sequence::seg_distribution.push(0, 33);
-        hpdcache_test_sequence::seg_distribution.push(1, 33);
-        hpdcache_test_sequence::seg_distribution.push(2, 33);
-        hpdcache_test_sequence::seg_distribution.push(3, 1);
-        hpdcache_test_sequence::segptr->set_mode(seg_distribution);
-
-        hpdcache_test_sequence::delay_distribution.push(pair<int, int>(0, 0), 80);
-        hpdcache_test_sequence::delay_distribution.push(pair<int, int>(1, 4), 18);
-        hpdcache_test_sequence::delay_distribution.push(pair<int, int>(5, 20), 2);
-        hpdcache_test_sequence::delay->set_mode(delay_distribution);
-
-        hpdcache_test_sequence::amo_sc_do_distribution.push(false, 25);
-        hpdcache_test_sequence::amo_sc_do_distribution.push(true, 75);
-        hpdcache_test_sequence::amo_sc_do->set_mode(amo_sc_do_distribution);
-
-        hpdcache_test_sequence::wr_policy_distribution.push(
-            hpdcache_test_transaction_req::HPDCACHE_WR_POLICY_AUTO, 80);
-        hpdcache_test_sequence::wr_policy_distribution.push(
-            hpdcache_test_transaction_req::HPDCACHE_WR_POLICY_WB, 10);
-        hpdcache_test_sequence::wr_policy_distribution.push(
-            hpdcache_test_transaction_req::HPDCACHE_WR_POLICY_WT, 10);
-        hpdcache_test_sequence::wr_policy->set_mode(wr_policy_distribution);
-
-        hpdcache_test_sequence::op_distribution.push(
-            hpdcache_test_transaction_req::HPDCACHE_REQ_LOAD, 400);
-
-#if (CONF_HPDCACHE_WT_ENABLE || CONF_HPDCACHE_WB_ENABLE)
-        hpdcache_test_sequence::op_distribution.push(
-            hpdcache_test_transaction_req::HPDCACHE_REQ_STORE, 350);
-#endif
-
-        hpdcache_test_sequence::op_distribution.push(
-            hpdcache_test_transaction_req::HPDCACHE_REQ_CMO_FENCE, 10);
-        hpdcache_test_sequence::op_distribution.push(
-            hpdcache_test_transaction_req::HPDCACHE_REQ_CMO_PREFETCH, 10);
-
-#if !defined(CONF_HPDCACHE_WB_ENABLE) || (CONF_HPDCACHE_WB_ENABLE == 0)
-        hpdcache_test_sequence::op_distribution.push(
-            hpdcache_test_transaction_req::HPDCACHE_REQ_CMO_INVAL_NLINE, 15);
-        hpdcache_test_sequence::op_distribution.push(
-            hpdcache_test_transaction_req::HPDCACHE_REQ_CMO_INVAL_ALL, 15);
-#endif
-
-        hpdcache_test_sequence::op_distribution.push(
-            hpdcache_test_transaction_req::HPDCACHE_REQ_CMO_FLUSH_NLINE, 10);
-        hpdcache_test_sequence::op_distribution.push(
-            hpdcache_test_transaction_req::HPDCACHE_REQ_CMO_FLUSH_ALL, 1);
-        hpdcache_test_sequence::op_distribution.push(
-            hpdcache_test_transaction_req::HPDCACHE_REQ_CMO_FLUSH_INVAL_NLINE, 10);
-        hpdcache_test_sequence::op_distribution.push(
-            hpdcache_test_transaction_req::HPDCACHE_REQ_CMO_FLUSH_INVAL_ALL, 1);
-        hpdcache_test_sequence::op->set_mode(op_distribution);
-
-        hpdcache_test_sequence::op_amo_distribution.push(
-            hpdcache_test_transaction_req::HPDCACHE_REQ_LOAD, 800);
-
-#if (CONF_HPDCACHE_WT_ENABLE || CONF_HPDCACHE_WB_ENABLE)
-        hpdcache_test_sequence::op_amo_distribution.push(
-            hpdcache_test_transaction_req::HPDCACHE_REQ_STORE, 600);
-#endif
-
-        hpdcache_test_sequence::op_amo_distribution.push(
-            hpdcache_test_transaction_req::HPDCACHE_REQ_CMO_FENCE, 10);
-        hpdcache_test_sequence::op_amo_distribution.push(
-            hpdcache_test_transaction_req::HPDCACHE_REQ_CMO_PREFETCH, 10);
-        //        hpdcache_test_sequence::op_distribution.push(hpdcache_test_transaction_req::HPDCACHE_REQ_CMO_INVAL_NLINE,
-        //        15);
-        //        hpdcache_test_sequence::op_distribution.push(hpdcache_test_transaction_req::HPDCACHE_REQ_CMO_INVAL_ALL,
-        //        15);
-        hpdcache_test_sequence::op_amo_distribution.push(
-            hpdcache_test_transaction_req::HPDCACHE_REQ_CMO_FLUSH_NLINE, 10);
-        hpdcache_test_sequence::op_amo_distribution.push(
-            hpdcache_test_transaction_req::HPDCACHE_REQ_CMO_FLUSH_ALL, 1);
-        hpdcache_test_sequence::op_amo_distribution.push(
-            hpdcache_test_transaction_req::HPDCACHE_REQ_CMO_FLUSH_INVAL_NLINE, 10);
-        hpdcache_test_sequence::op_amo_distribution.push(
-            hpdcache_test_transaction_req::HPDCACHE_REQ_CMO_FLUSH_INVAL_ALL, 1);
-
-#if (CONF_HPDCACHE_WT_ENABLE || CONF_HPDCACHE_WB_ENABLE)
-        hpdcache_test_sequence::op_amo_distribution.push(
-            hpdcache_test_transaction_req::HPDCACHE_REQ_AMO_LR, 4);
-        hpdcache_test_sequence::op_amo_distribution.push(
-            hpdcache_test_transaction_req::HPDCACHE_REQ_AMO_SC, 4);
-        hpdcache_test_sequence::op_amo_distribution.push(
-            hpdcache_test_transaction_req::HPDCACHE_REQ_AMO_SWAP, 4);
-        hpdcache_test_sequence::op_amo_distribution.push(
-            hpdcache_test_transaction_req::HPDCACHE_REQ_AMO_ADD, 4);
-        hpdcache_test_sequence::op_amo_distribution.push(
-            hpdcache_test_transaction_req::HPDCACHE_REQ_AMO_AND, 4);
-        hpdcache_test_sequence::op_amo_distribution.push(
-            hpdcache_test_transaction_req::HPDCACHE_REQ_AMO_OR, 4);
-        hpdcache_test_sequence::op_amo_distribution.push(
-            hpdcache_test_transaction_req::HPDCACHE_REQ_AMO_XOR, 4);
-        hpdcache_test_sequence::op_amo_distribution.push(
-            hpdcache_test_transaction_req::HPDCACHE_REQ_AMO_MAX, 4);
-        hpdcache_test_sequence::op_amo_distribution.push(
-            hpdcache_test_transaction_req::HPDCACHE_REQ_AMO_MAXU, 4);
-        hpdcache_test_sequence::op_amo_distribution.push(
-            hpdcache_test_transaction_req::HPDCACHE_REQ_AMO_MIN, 4);
-        hpdcache_test_sequence::op_amo_distribution.push(
-            hpdcache_test_transaction_req::HPDCACHE_REQ_AMO_MINU, 4);
-#endif
-        hpdcache_test_sequence::op_amo->set_mode(op_amo_distribution);
-
-        scv_bag<bool> need_rsp_dist;
-        need_rsp_dist.push(false, 5);
-        need_rsp_dist.push(true, 95);
-        need_rsp_rnd->set_mode(need_rsp_dist);
-
-        size->keep_only(0, LOG2_REQ_DATA_BYTES);
-
-        scv_bag<bool> fault_inj_dist;
-        fault_inj_dist.push(false, 99);
-#if CONF_HPDCACHE_TEST_FAULT_INJ
-        fault_inj_dist.push(true, 1);
-#endif
-        fault_inj_rnd->set_mode(fault_inj_dist);
-
-        scv_bag<int> fault_inj_domain_dist;
-#if CONF_HPDCACHE_TEST_FAULT_INJ_DIR
-        fault_inj_domain_dist.push(static_cast<int>(hpdcache_fault_injection::domain_e::CACHE_DIR),
-                                   20);
-#endif
-        fault_inj_domain_dist.push(static_cast<int>(hpdcache_fault_injection::domain_e::CACHE_DAT),
-                                   80);
-        fault_inj_domain_rnd->set_mode(fault_inj_domain_dist);
-
-        scv_bag<bool> fault_inj_double_dist;
-        fault_inj_double_dist.push(false, 95);
-#if CONF_HPDCACHE_TEST_DOUBLE_FAULT_INJ
-        fault_inj_double_dist.push(true, 5);
-#endif
-        fault_inj_double_rnd->set_mode(fault_inj_double_dist);
-
-        scv_bag<pair<int, int>> fault_inj_way_dist;
-        fault_inj_way_dist.push(pair<int, int>(0, HPDCACHE_WAYS - 1), 100);
-        fault_inj_way_rnd->set_mode(fault_inj_way_dist);
+        seg_dist.add_value_weight(0, 33);
+        seg_dist.add_value_weight(1, 33);
+        seg_dist.add_value_weight(2, 33);
+        seg_dist.add_value_weight(3, 1);
+        seg_dist.init(rg);
     }
 
-private:
-    hpdcache_test_sequence::hpdcache_test_memory_segment seg[4];
-    scv_smart_ptr<sc_bv<HPDCACHE_REQ_DATA_WIDTH>> data;
-    scv_smart_ptr<sc_bv<HPDCACHE_REQ_DATA_WIDTH>> size;
-    scv_smart_ptr<bool> need_rsp_rnd;
+    void init_op_dist(bool amo_supported)
+    {
+        op_dist.add_value_weight(hpdcache_test_transaction_req::HPDCACHE_REQ_LOAD, 800);
 
-    scv_smart_ptr<bool> fault_inj_rnd;
-    scv_smart_ptr<int> fault_inj_way_rnd;
-    scv_smart_ptr<int> fault_inj_domain_rnd;
-    scv_smart_ptr<bool> fault_inj_double_rnd;
+#if (CONF_HPDCACHE_WT_ENABLE || CONF_HPDCACHE_WB_ENABLE)
+        op_dist.add_value_weight(hpdcache_test_transaction_req::HPDCACHE_REQ_STORE, 600);
+        if (amo_supported) {
+            op_dist.add_value_weight(hpdcache_test_transaction_req::HPDCACHE_REQ_AMO_LR, 4);
+            op_dist.add_value_weight(hpdcache_test_transaction_req::HPDCACHE_REQ_AMO_SC, 4);
+            op_dist.add_value_weight(hpdcache_test_transaction_req::HPDCACHE_REQ_AMO_SWAP, 4);
+            op_dist.add_value_weight(hpdcache_test_transaction_req::HPDCACHE_REQ_AMO_ADD, 4);
+            op_dist.add_value_weight(hpdcache_test_transaction_req::HPDCACHE_REQ_AMO_AND, 4);
+            op_dist.add_value_weight(hpdcache_test_transaction_req::HPDCACHE_REQ_AMO_OR, 4);
+            op_dist.add_value_weight(hpdcache_test_transaction_req::HPDCACHE_REQ_AMO_XOR, 4);
+            op_dist.add_value_weight(hpdcache_test_transaction_req::HPDCACHE_REQ_AMO_MAX, 4);
+            op_dist.add_value_weight(hpdcache_test_transaction_req::HPDCACHE_REQ_AMO_MAXU, 4);
+            op_dist.add_value_weight(hpdcache_test_transaction_req::HPDCACHE_REQ_AMO_MIN, 4);
+            op_dist.add_value_weight(hpdcache_test_transaction_req::HPDCACHE_REQ_AMO_MINU, 4);
+        }
+#endif
+
+        op_dist.add_value_weight(hpdcache_test_transaction_req::HPDCACHE_REQ_CMO_FENCE, 10);
+        op_dist.add_value_weight(hpdcache_test_transaction_req::HPDCACHE_REQ_CMO_PREFETCH, 10);
+
+#if !defined(CONF_HPDCACHE_WB_ENABLE) || (CONF_HPDCACHE_WB_ENABLE == 0)
+        op_dist.add_value_weight(hpdcache_test_transaction_req::HPDCACHE_REQ_CMO_INVAL_NLINE, 10);
+        op_dist.add_value_weight(hpdcache_test_transaction_req::HPDCACHE_REQ_CMO_INVAL_ALL, 1);
+#endif
+
+        op_dist.add_value_weight(hpdcache_test_transaction_req::HPDCACHE_REQ_CMO_FLUSH_NLINE, 10);
+        op_dist.add_value_weight(hpdcache_test_transaction_req::HPDCACHE_REQ_CMO_FLUSH_ALL, 1);
+        op_dist.add_value_weight(hpdcache_test_transaction_req::HPDCACHE_REQ_CMO_FLUSH_INVAL_NLINE,
+                                 10);
+        op_dist.add_value_weight(hpdcache_test_transaction_req::HPDCACHE_REQ_CMO_FLUSH_INVAL_ALL,
+                                 1);
+        op_dist.init(rg);
+    }
+
+  private:
+    using wr_policy_e = hpdcache_test_transaction_req::hpdcache_wr_policy_hint_e;
+    using op_e = hpdcache_test_transaction_req::hpdcache_req_op_e;
+    using fault_domain_e = hpdcache_fault_injection::domain_e;
+
+    std::default_random_engine rg;
+    std::poisson_distribution<int> delay_dist;
+    std::bernoulli_distribution amo_sc_do_dist;
+    std::bernoulli_distribution need_rsp_dist;
+    hpdcache_test_enum_distribution<wr_policy_e> wr_policy_dist;
+    hpdcache_test_enum_distribution<int> seg_dist;
+    hpdcache_test_enum_distribution<op_e> op_dist;
+
+    hpdcache_test_sequence::hpdcache_test_memory_segment seg[4];
+    std::uniform_int_distribution<uint32_t> data_dist;
+    std::uniform_int_distribution<int> size_dist;
+
+    std::bernoulli_distribution fault_inj_dist;
+    std::uniform_int_distribution<int> fault_inj_way_dist;
+    hpdcache_test_enum_distribution<fault_domain_e> fault_inj_domain_dist;
+    std::bernoulli_distribution fault_inj_double_dist;
 
     static constexpr unsigned int REQ_DATA_BYTES = HPDCACHE_REQ_DATA_WIDTH / 8;
     static constexpr unsigned int LOG2_REQ_DATA_BYTES = HPDCACHE_TEST_DEFS_LOG2(REQ_DATA_BYTES);
@@ -212,53 +159,43 @@ private:
 
     inline sc_bv<HPDCACHE_REQ_DATA_WIDTH> create_random_data()
     {
-        data->next();
-        return data->read();
+        sc_bv<HPDCACHE_REQ_DATA_WIDTH> ret;
+        for (int i = 0; i < HPDCACHE_REQ_DATA_WIDTH / 32; i++) {
+            ret.range((i + 1) * 32 - 1, i * 32) = data_dist(rg);
+        }
+        return ret;
     }
 
     inline uint32_t create_random_size(bool is_amo)
     {
         uint32_t ret;
-        size->next();
-        ret = size->read().to_uint();
+        ret = size_dist(rg);
         if (is_amo) {
             return (ret >= 3) ? 3 : 2;
         }
         return ret;
     }
 
-    std::shared_ptr<hpdcache_test_transaction_req> create_random_transaction()
+    std::shared_ptr<hpdcache_test_transaction_req> create_random_transaction(uint64_t addr)
     {
         std::shared_ptr<hpdcache_test_transaction_req> t;
 
-        scv_smart_ptr<uint64_t> addr("addr");
-        bool seg_amo_supported;
         bool seg_wr_policy_random;
         hpdcache_test_memory_segment::wr_policy_e seg_wr_policy;
         int segn;
 
-        while (!is_available_id()) wait();
+        while (!is_available_id())
+            wait();
 
-        segptr->next();
-        segn = segptr->read();
+        segn = seg_dist.rand();
 
         seg_wr_policy = seg[segn].get_wr_policy_hint();
-        seg_amo_supported = seg[segn].is_amo_supported();
         seg_wr_policy_random = (seg_wr_policy == hpdcache_test_memory_segment::WR_POLICY_RANDOM);
-
-        addr->next();
 
         t = acquire_transaction<hpdcache_test_transaction_req>();
 
         //  Select operation
-        if (seg_amo_supported) {
-            hpdcache_test_sequence::op_amo->next();
-            t->req_op = op_amo->read();
-        } else {
-            hpdcache_test_sequence::op->next();
-            t->req_op = op->read();
-        }
-
+        t->req_op = op_dist.rand();
         t->req_wdata = create_random_data();
         t->req_sid = 0;
         t->req_tid = allocate_id();
@@ -267,9 +204,7 @@ private:
 
         //  Select write policy
         if (seg_wr_policy_random) {
-            wr_policy->next();
-            t->req_wr_policy_hint =
-                (hpdcache_test_transaction_req::hpdcache_wr_policy_hint_e)wr_policy->read();
+            t->req_wr_policy_hint = wr_policy_dist.rand();
         } else if (seg_wr_policy == hpdcache_test_memory_segment::WR_POLICY_WB) {
             t->req_wr_policy_hint = hpdcache_test_transaction_req::HPDCACHE_WR_POLICY_WB;
         } else if (seg_wr_policy == hpdcache_test_memory_segment::WR_POLICY_WT) {
@@ -284,46 +219,41 @@ private:
         uint64_t base = seg[segn].get_base();
         uint64_t length = seg[segn].get_length();
         uint32_t bytes = 1 << sz;
-        uint64_t address = ((base + (addr->read() % length)) / bytes) * bytes;
+        uint64_t address = ((base + (addr % length)) / bytes) * bytes;
 
         t->req_addr = address;
         if (t->is_cmo()) {
             t->req_be = 0;
             t->req_size = 0;
             t->req_uncacheable = false;
-
-            need_rsp_rnd->next();
-            t->req_need_rsp = need_rsp_rnd->read();
+            t->req_need_rsp = need_rsp_dist(rg);
         } else {
             uint32_t offset = address % REQ_DATA_BYTES;
             t->req_be = ((1UL << bytes) - 1) << offset;
             t->req_size = sz;
-            t->req_uncacheable = seg[segptr->read()].is_uncached() ? 1 : 0;
+            t->req_uncacheable = seg[seg_dist.rand()].is_uncached() ? 1 : 0;
             if (req_is_amo) {
                 t->req_need_rsp = true;
             } else {
-                need_rsp_rnd->next();
-                t->req_need_rsp = need_rsp_rnd->read();
+                t->req_need_rsp = need_rsp_dist(rg);
             }
         }
 
-        fault_inj_rnd->next();
-        if (fault_inj_rnd->read()) {
-            fault_inj_way_rnd->next();
-            fault_inj_domain_rnd->next();
-            fault_inj_double_rnd->next();
+#if CONF_HPDCACHE_TEST_FAULT_INJ
+        if (fault_inj_dist(rg)) {
             t->req_fault.valid = true;
             t->req_fault.set = t->get_cache_set();
-            t->req_fault.way = fault_inj_way_rnd->read();
+            t->req_fault.way = fault_inj_way_dist(rg);
             t->req_fault.word = t->get_cache_word();
-            t->req_fault.domain =
-                static_cast<hpdcache_fault_injection::domain_e>(fault_inj_domain_rnd->read());
-            if (fault_inj_double_rnd->read()) {
-                t->req_fault.fault_mask = 0xA0;
-            } else {
-                t->req_fault.fault_mask = 0x20;
-            }
+            t->req_fault.domain = fault_inj_domain_dist.rand();
+
+#if CONF_HPDCACHE_TEST_DOUBLE_FAULT_INJ
+            t->req_fault.fault_mask = fault_inj_double_dist(rg) ? 0xA0 : 0x20;
+#else
+            t->req_fault.fault_mask = 0x20;
+#endif
         }
+#endif
 
         return t;
     }
@@ -333,9 +263,8 @@ private:
     {
         std::shared_ptr<hpdcache_test_transaction_req> t;
 
-        while (!is_available_id()) wait();
-
-        segptr->next();
+        while (!is_available_id())
+            wait();
 
         uint32_t sz = create_random_size(true);
         uint32_t bytes = 1 << sz;
@@ -358,7 +287,6 @@ private:
 
     void run()
     {
-
 #if HPDCACHE_TEST_SEQUENCE_ENABLE_ERROR_SEGMENTS
         if (hpdcache_test_sequence::mem_resp_model) {
             hpdcache_test_sequence::mem_resp_model->add_error_segment(
@@ -370,42 +298,36 @@ private:
         }
 #endif
 
-        while (rst_ni == 0) wait();
+        while (rst_ni == 0)
+            wait();
 
         wait();
 
-        scv_smart_ptr<int> lrsc_inbetween_instrs;
-        lrsc_inbetween_instrs->keep_only(0, 10);
-        lrsc_inbetween_instrs->next();
+        std::uniform_int_distribution<uint64_t> addr;
+        std::uniform_int_distribution<int> lrsc_inbetween_instrs_dist(0, 10);
 
-        delay->next();
         for (size_t n = 0; n < this->max_transactions; n++) {
             std::shared_ptr<hpdcache_test_transaction_req> t;
-            t = create_random_transaction();
+            t = create_random_transaction(addr(rg));
 
             if (t->is_amo_lr()) {
                 hpdcache_test_transaction_req prev_lr = *t;
-                send_transaction(t, delay->read());
-                delay->next();
+                send_transaction(t, delay_dist(rg));
 
-                amo_sc_do->next();
-                if (amo_sc_do->read()) {
-                    for (int i = 0; i < lrsc_inbetween_instrs.read(); i++) {
-                        t = create_random_transaction();
-                        send_transaction(t, delay->read());
-                        delay->next();
+                if (amo_sc_do_dist(rg)) {
+                    for (int i = 0; i < lrsc_inbetween_instrs_dist(rg); i++) {
+                        t = create_random_transaction(addr(rg));
+                        send_transaction(t, delay_dist(rg));
                     }
 
                     t = create_sc_transaction(prev_lr.req_addr.to_uint64(),
                                               prev_lr.req_uncacheable);
-                    send_transaction(t, delay->read());
-                    delay->next();
+                    send_transaction(t, delay_dist(rg));
                 }
 
                 continue;
             }
-            send_transaction(t, delay->read());
-            delay->next();
+            send_transaction(t, delay_dist(rg));
         }
 
         //  ask the driver to stop

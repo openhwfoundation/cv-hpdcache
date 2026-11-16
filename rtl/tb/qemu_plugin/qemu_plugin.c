@@ -30,23 +30,22 @@ typedef enum mode
 mode_write mode; // Use to know which mode the user want
 
 bool is_64_bits; // we use this to know how many bits are used to describe an address
-char buffer_compress[SIZE_BUFFER]; // A buffer to store data collected by the plugin. We write it by
-                                   // chunk in the file
+char buffer_compress[SIZE_BUFFER]; // A buffer to store data collected by the plugin. We write it
+                                   // by chunk in the file
 int buffer_begin;                  // an index in the buffer
 bool need_to_compress =
     true;               // true -> we encrypt the data; false -> data are stored without compression
 bool write_data = true; // TODO ask to Fred
 
 int file_descriptor;         // The file where we store data
-mz_stream* stream = NULL;    // We use this to compress data
+mz_stream *stream = NULL;    // We use this to compress data
 int current_instruction = 0; // count the number of instructions between two accesses in memory
 
 /**
  * @brief This function is used to create a stream. This must be call only one time before the first
  * write in the file
  */
-static void
-init_stream(void)
+static void init_stream(void)
 {
     stream = malloc(sizeof(mz_stream));
     if (mz_deflateInit(stream, MZ_BEST_SPEED) != MZ_OK) {
@@ -61,11 +60,10 @@ init_stream(void)
  * @param last_call This parameter can take two value : MZ_FINISH, MZ_NO_FLUSH. MZ_FINISH is only
  * for the last call when qemu exit
  */
-static void
-compress_data_to_file(int last_call)
+static void compress_data_to_file(int last_call)
 {
     size_t buffer_size = buffer_begin;
-    unsigned char* out_buffer = malloc(buffer_begin);
+    unsigned char *out_buffer = malloc(buffer_begin);
     if (!out_buffer) {
         perror("Error in memory allocation");
         exit(1);
@@ -85,7 +83,7 @@ compress_data_to_file(int last_call)
         size_t chunk_size =
             (buffer_begin - offset) >= buffer_size ? buffer_size : (buffer_begin - offset);
         stream->avail_in = chunk_size;
-        stream->next_in = (unsigned char*)(buffer_compress + offset);
+        stream->next_in = (unsigned char *)(buffer_compress + offset);
 
         do {
             stream->avail_out = buffer_size;
@@ -124,29 +122,26 @@ compress_data_to_file(int last_call)
  *
  * @param arg a string which can be convert to an integer between 0 and 2
  */
-static void
-set_mode(char* arg)
+static void set_mode(char *arg)
 {
     switch (arg[0]) {
-        case '0':
-            mode = WRITE_BINARY;
-            break;
-        case '1':
-            mode = WRITE_ASCII;
-            break;
-        case '2':
-            mode = NO_WRITE;
-            break;
-        default:
-            fprintf(stderr,
-                    "\nMode must be between 0 and 2\n0 -> write in binary\n1 -> write "
-                    "in ascii\n2 -> do nothing\n");
-            exit(1);
+    case '0':
+        mode = WRITE_BINARY;
+        break;
+    case '1':
+        mode = WRITE_ASCII;
+        break;
+    case '2':
+        mode = NO_WRITE;
+        break;
+    default:
+        fprintf(stderr, "\nMode must be between 0 and 2\n0 -> write in binary\n1 -> write "
+                        "in ascii\n2 -> do nothing\n");
+        exit(1);
     }
     if (arg[1] != 0) {
-        fprintf(stderr,
-                "\nMode must be between 0 and 2\n0 -> write in binary\n1 -> write in "
-                "ascii\n2 -> do nothing\n");
+        fprintf(stderr, "\nMode must be between 0 and 2\n0 -> write in binary\n1 -> write in "
+                        "ascii\n2 -> do nothing\n");
         exit(1);
     }
 }
@@ -157,10 +152,8 @@ set_mode(char* arg)
  * @param data An array of data we want to store in the file
  * @param size The number of bytes we used in this array
  */
-static void
-write_buffer(char* data, int size)
+static void write_buffer(char *data, int size)
 {
-
     if (need_to_compress) {
         for (int i = 0; i < size; i++) {
             buffer_compress[buffer_begin] = data[i];
@@ -178,42 +171,39 @@ write_buffer(char* data, int size)
     }
 }
 
-static void
-write_address(uint64_t* address)
+static void write_address(uint64_t *address)
 {
     if (is_64_bits) {
-        write_buffer((char*)(address), sizeof(uint64_t));
+        write_buffer((char *)(address), sizeof(uint64_t));
     } else {
-        write_buffer((char*)((uint32_t*)address), sizeof(uint32_t));
+        write_buffer((char *)((uint32_t *)address), sizeof(uint32_t));
     }
 }
 
-static void
-write_type_transaction(bool is_store)
+static void write_type_transaction(bool is_store)
 {
     char type = 0;
     if (is_store) {
         type = 1;
     }
-    write_buffer((char*)(&type), 1);
+    write_buffer((char *)(&type), 1);
 }
 
-static uint8_t
-get_size_value(enum qemu_plugin_mem_value_type value)
+static uint8_t get_size_value(enum qemu_plugin_mem_value_type value)
 {
     switch (value) {
-        case QEMU_PLUGIN_MEM_VALUE_U8:
-            return 0;
-        case QEMU_PLUGIN_MEM_VALUE_U16:
-            return 1;
-        case QEMU_PLUGIN_MEM_VALUE_U32:
-            return 2;
-        case QEMU_PLUGIN_MEM_VALUE_U64:
-            return 3;
-        case QEMU_PLUGIN_MEM_VALUE_U128:
-            return 4;
-        default:
-            return 0;
+    case QEMU_PLUGIN_MEM_VALUE_U8:
+        return 0;
+    case QEMU_PLUGIN_MEM_VALUE_U16:
+        return 1;
+    case QEMU_PLUGIN_MEM_VALUE_U32:
+        return 2;
+    case QEMU_PLUGIN_MEM_VALUE_U64:
+        return 3;
+    case QEMU_PLUGIN_MEM_VALUE_U128:
+        return 4;
+    default:
+        return 0;
     }
 }
 
@@ -224,47 +214,36 @@ get_size_value(enum qemu_plugin_mem_value_type value)
  * @param size_address describe the width used in the address
  * @param size_value an enum provided by QEMU to know the size of the value ( see get_size_value )
  */
-static void
-write_size(uint8_t* size_address, enum qemu_plugin_mem_value_type size_value)
+static void write_size(uint8_t *size_address, enum qemu_plugin_mem_value_type size_value)
 {
     char value = (*size_address) | (get_size_value(size_value) << 4);
-    write_buffer((char*)(&value), 1);
+    write_buffer((char *)(&value), 1);
 }
 
-static void
-write_boolean(uint8_t value)
-{
-    write_buffer((char*)(&value), 1);
-}
+static void write_boolean(uint8_t value) { write_buffer((char *)(&value), 1); }
 
-static void
-write_delay(uint8_t* delay)
-{
-    write_buffer((char*)(delay), sizeof(uint8_t));
-}
+static void write_delay(uint8_t *delay) { write_buffer((char *)(delay), sizeof(uint8_t)); }
 
-static void
-write_value(qemu_plugin_mem_value value)
+static void write_value(qemu_plugin_mem_value value)
 {
     switch (value.type) {
-
-        case QEMU_PLUGIN_MEM_VALUE_U8:
-            write_buffer((char*)&(value.data.u8), sizeof(uint8_t));
-            break;
-        case QEMU_PLUGIN_MEM_VALUE_U16:
-            write_buffer((char*)&(value.data.u16), sizeof(uint16_t));
-            break;
-        case QEMU_PLUGIN_MEM_VALUE_U32:
-            write_buffer((char*)&(value.data.u32), sizeof(uint32_t));
-            break;
-        case QEMU_PLUGIN_MEM_VALUE_U64:
-            write_buffer((char*)&(value.data.u64), sizeof(uint64_t));
-            break;
-        case QEMU_PLUGIN_MEM_VALUE_U128:
-            //  TODO use like this
-            //  value.data.u128.low = low;
-            //  value.data.u128.high = current_cpu->neg.plugin_mem_value_high;
-            break;
+    case QEMU_PLUGIN_MEM_VALUE_U8:
+        write_buffer((char *)&(value.data.u8), sizeof(uint8_t));
+        break;
+    case QEMU_PLUGIN_MEM_VALUE_U16:
+        write_buffer((char *)&(value.data.u16), sizeof(uint16_t));
+        break;
+    case QEMU_PLUGIN_MEM_VALUE_U32:
+        write_buffer((char *)&(value.data.u32), sizeof(uint32_t));
+        break;
+    case QEMU_PLUGIN_MEM_VALUE_U64:
+        write_buffer((char *)&(value.data.u64), sizeof(uint64_t));
+        break;
+    case QEMU_PLUGIN_MEM_VALUE_U128:
+        //  TODO use like this
+        //  value.data.u128.low = low;
+        //  value.data.u128.high = current_cpu->neg.plugin_mem_value_high;
+        break;
     }
 }
 
@@ -273,8 +252,7 @@ write_value(qemu_plugin_mem_value value)
  *
  * @param file_name The name of file we will create
  */
-static void
-open_file(char* file_name)
+static void open_file(char *file_name)
 {
     file_descriptor = open(file_name, O_CREAT | O_WRONLY | O_TRUNC, S_IRWXU);
     if (file_descriptor == -1) {
@@ -285,11 +263,7 @@ open_file(char* file_name)
     }
 }
 
-static void
-close_file(void)
-{
-    close(file_descriptor);
-}
+static void close_file(void) { close(file_descriptor); }
 
 /**
  * @brief Store a transaction in a file
@@ -302,13 +276,8 @@ close_file(void)
  * memory access
  * @param value an integer on 8 bytes representing the value for a store
  */
-static void
-write_in_file(bool is_store,
-              uint64_t address,
-              uint8_t size,
-              uint8_t time_elapsed,
-              qemu_plugin_mem_value value,
-              uint8_t cacheable)
+static void write_in_file(bool is_store, uint64_t address, uint8_t size, uint8_t time_elapsed,
+                          qemu_plugin_mem_value value, uint8_t cacheable)
 {
     write_delay(&time_elapsed);         // 1 byte
     write_address(&address);            // 8 bytes
@@ -337,11 +306,11 @@ write_in_file(bool is_store,
  * @param vaddr The address concerned by the instruction
  * @param userdata NULL pointer, we don't send something
  */
-static void
-mem_cb(unsigned int vcpu_index, qemu_plugin_meminfo_t info, uint64_t vaddr, void* userdata)
+static void mem_cb(unsigned int vcpu_index, qemu_plugin_meminfo_t info, uint64_t vaddr,
+                   void *userdata)
 {
     size_t size = qemu_plugin_mem_size_shift(info);
-    struct qemu_plugin_hwaddr* hwaddr = qemu_plugin_get_hwaddr(info, vaddr);
+    struct qemu_plugin_hwaddr *hwaddr = qemu_plugin_get_hwaddr(info, vaddr);
     uint8_t uncacheable = 0;
     if (hwaddr) {
         vaddr = qemu_plugin_hwaddr_phys_addr(hwaddr);
@@ -359,7 +328,7 @@ mem_cb(unsigned int vcpu_index, qemu_plugin_meminfo_t info, uint64_t vaddr, void
         }
     }
     char my_string[75];
-    const char* type = qemu_plugin_mem_is_store(info) ? "store" : "load";
+    const char *type = qemu_plugin_mem_is_store(info) ? "store" : "load";
     qemu_plugin_mem_value value_store = qemu_plugin_mem_get_value(info);
 
     if (!write_data) { // TODO ask to Fred what instruction trigger this
@@ -367,28 +336,17 @@ mem_cb(unsigned int vcpu_index, qemu_plugin_meminfo_t info, uint64_t vaddr, void
     }
 
     switch (mode) {
-        case WRITE_BINARY:
-            write_in_file(qemu_plugin_mem_is_store(info),
-                          vaddr,
-                          size,
-                          current_instruction,
-                          value_store,
-                          uncacheable);
-            break;
-        case WRITE_ASCII:
-            snprintf(my_string,
-                     75,
-                     "%d [MEM] %-5s vcpu=%u addr=0x%" PRIx64 " size=%zu value=%lu\n",
-                     current_instruction,
-                     type,
-                     vcpu_index,
-                     vaddr,
-                     size,
-                     value_store.data.u64);
-            write_buffer(my_string, strlen(my_string));
-            break;
-        default:
-            break;
+    case WRITE_BINARY:
+        write_in_file(qemu_plugin_mem_is_store(info), vaddr, size, current_instruction, value_store,
+                      uncacheable);
+        break;
+    case WRITE_ASCII:
+        snprintf(my_string, 75, "%d [MEM] %-5s vcpu=%u addr=0x%" PRIx64 " size=%zu value=%lu\n",
+                 current_instruction, type, vcpu_index, vaddr, size, value_store.data.u64);
+        write_buffer(my_string, strlen(my_string));
+        break;
+    default:
+        break;
     }
     current_instruction = 0; // reboot the counter of instruction who are not a memory access
 }
@@ -400,8 +358,7 @@ mem_cb(unsigned int vcpu_index, qemu_plugin_meminfo_t info, uint64_t vaddr, void
  * @param id Don't care
  * @param p Don't care
  */
-static void
-plugin_exit(qemu_plugin_id_t id, void* p)
+static void plugin_exit(qemu_plugin_id_t id, void *p)
 {
     if (need_to_compress) {
         compress_data_to_file(MZ_FINISH);
@@ -418,11 +375,7 @@ plugin_exit(qemu_plugin_id_t id, void* p)
  * @param vcpu_index Don't care
  * @param userdata  Don't care
  */
-static void
-counter_inst(unsigned int vcpu_index, void* userdata)
-{
-    current_instruction++;
-}
+static void counter_inst(unsigned int vcpu_index, void *userdata) { current_instruction++; }
 
 /**
  * @brief This function is called when a tb (translation block) is ready. We can register ourself
@@ -432,28 +385,25 @@ counter_inst(unsigned int vcpu_index, void* userdata)
  * @param id Don't care
  * @param tb the translation block
  */
-static void
-tb_trans_cb(qemu_plugin_id_t id, struct qemu_plugin_tb* tb)
+static void tb_trans_cb(qemu_plugin_id_t id, struct qemu_plugin_tb *tb)
 {
     int n = qemu_plugin_tb_n_insns(tb);
     for (int i = 0; i < n; i++) {
-        struct qemu_plugin_insn* insn = qemu_plugin_tb_get_insn(tb, i);
-        qemu_plugin_register_vcpu_mem_cb(
-            insn, mem_cb, QEMU_PLUGIN_CB_NO_REGS, QEMU_PLUGIN_MEM_RW, NULL);
+        struct qemu_plugin_insn *insn = qemu_plugin_tb_get_insn(tb, i);
+        qemu_plugin_register_vcpu_mem_cb(insn, mem_cb, QEMU_PLUGIN_CB_NO_REGS, QEMU_PLUGIN_MEM_RW,
+                                         NULL);
         qemu_plugin_register_vcpu_insn_exec_cb(insn, counter_inst, 0, NULL);
     }
 }
 
-static void
-usage(void)
+static void usage(void)
 {
-    fprintf(stderr,
-            "\nUsage : \nmode=<0,1,2 ( 0-> binary, 1 -> ascii, 2 -> nothing )>, "
-            "file=<name_of_a_file>, compress=<true, false>\n");
+    fprintf(stderr, "\nUsage : \nmode=<0,1,2 ( 0-> binary, 1 -> ascii, 2 -> nothing )>, "
+                    "file=<name_of_a_file>, compress=<true, false>\n");
 }
 
-QEMU_PLUGIN_EXPORT int
-qemu_plugin_install(qemu_plugin_id_t id, const qemu_info_t* info, int argc, char** argv)
+QEMU_PLUGIN_EXPORT int qemu_plugin_install(qemu_plugin_id_t id, const qemu_info_t *info, int argc,
+                                           char **argv)
 {
     if (argc != 3) {
         usage();
@@ -461,7 +411,7 @@ qemu_plugin_install(qemu_plugin_id_t id, const qemu_info_t* info, int argc, char
     }
 
     for (int i = 0; i < argc; i++) {
-        char* opt = argv[i];
+        char *opt = argv[i];
         g_auto(GStrv) tokens = g_strsplit(opt, "=", 2);
         if (g_strcmp0(tokens[0], "mode") == 0) {
             set_mode(tokens[1]);

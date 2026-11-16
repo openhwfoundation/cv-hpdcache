@@ -26,43 +26,27 @@
 #ifndef __HPDCACHE_TEST_SEQUENCE_H__
 #define __HPDCACHE_TEST_SEQUENCE_H__
 
+#include <systemc>
+
 #include "hpdcache_test_defs.h"
 #include "hpdcache_test_mem_resp_model_base.h"
 #include "hpdcache_test_transaction.h"
-#include "scv.h"
 #include "sequence.h"
-#include <systemc>
 
 class hpdcache_test_sequence : public Sequence
 {
     const int HPDCACHE_REQ_MAX_TRANS_ID = 1 << HPDCACHE_REQ_TRANS_ID_WIDTH;
 
-public:
+  public:
     hpdcache_test_sequence(sc_core::sc_module_name nm, std::string seq_name)
-      : Sequence(nm)
-      , name(seq_name)
-      , max_transactions(100)
-      , segptr("segptr")
-      , seg_distribution("seg_distribution")
-      , delay("delay")
-      , delay_distribution("delay_distribution")
-      , amo_size("amo_size")
-      , amo_size_distribution("amo_size_distribution")
-      , amo_sc_do("amo_sc_do")
-      , amo_sc_do_distribution("amo_sc_do_distribution")
-      , op("op")
-      , op_distribution("op_distribution")
-      , op_amo("op_amo")
-      , op_amo_distribution("op_amo_distribution")
-      , wr_policy("wr_policy")
-      , wr_policy_distribution("wr_policy_distribution")
+        : Sequence(nm), name(seq_name), max_transactions(100)
     {
         std::cout << "Building " << nm << std::endl;
     }
 
     class hpdcache_test_memory_segment
     {
-    public:
+      public:
         enum wr_policy_e
         {
             WR_POLICY_AUTO = 0,
@@ -71,20 +55,17 @@ public:
             WR_POLICY_RANDOM = 3
         };
 
-    private:
+      private:
         sc_bv<HPDCACHE_PA_WIDTH> base;
         sc_bv<HPDCACHE_PA_WIDTH> length;
         bool uncached;
         bool amo_supported;
         wr_policy_e wr_policy_hint;
 
-    public:
+      public:
         hpdcache_test_memory_segment()
-          : base(0)
-          , length(0)
-          , uncached(false)
-          , amo_supported(false)
-          , wr_policy_hint(WR_POLICY_AUTO)
+            : base(0), length(0), uncached(false), amo_supported(false),
+              wr_policy_hint(WR_POLICY_AUTO)
         { /* empty */
         }
 
@@ -154,7 +135,7 @@ public:
 
     std::list<unsigned int>::const_iterator ids_cend() { return ids.cend(); }
 
-    const std::list<unsigned int>& get_ids() { return ids; }
+    const std::list<unsigned int> &get_ids() { return ids; }
 
     size_t ids_size() { return ids.size(); }
 
@@ -183,7 +164,8 @@ public:
         // release the previously used transaction object
         release_transaction<hpdcache_test_transaction_req>(t);
         // add some delay between two consecutive commands
-        for (int i = 0; i < delay; i++) wait();
+        for (int i = 0; i < delay; i++)
+            wait();
     }
 
     const std::string to_string() const
@@ -193,30 +175,16 @@ public:
         return os.str();
     }
 
-    friend std::ostream& operator<<(std::ostream& os, const hpdcache_test_sequence& seq)
+    friend std::ostream &operator<<(std::ostream &os, const hpdcache_test_sequence &seq)
     {
         os << seq.to_string();
         return os;
     }
 
-protected:
+  protected:
     std::list<unsigned int> ids;
     std::string name;
     size_t max_transactions;
-    scv_smart_ptr<int> segptr;
-    scv_bag<int> seg_distribution;
-    scv_smart_ptr<int> delay;
-    scv_bag<pair<int, int>> delay_distribution;
-    scv_smart_ptr<int> amo_size;
-    scv_bag<int> amo_size_distribution;
-    scv_smart_ptr<bool> amo_sc_do;
-    scv_bag<bool> amo_sc_do_distribution;
-    scv_smart_ptr<int> op;
-    scv_bag<int> op_distribution;
-    scv_smart_ptr<int> op_amo;
-    scv_bag<int> op_amo_distribution;
-    scv_smart_ptr<int> wr_policy;
-    scv_bag<int> wr_policy_distribution;
 
     std::shared_ptr<hpdcache_test_mem_resp_model_base> mem_resp_model;
 };

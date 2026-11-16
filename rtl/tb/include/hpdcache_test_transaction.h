@@ -12,8 +12,9 @@
 #ifndef __HPDCACHE_TEST_TRANSACTION_H__
 #define __HPDCACHE_TEST_TRANSACTION_H__
 
-#include <sstream>
 #include <verilated.h>
+
+#include <sstream>
 
 #include "hpdcache_fault_injection.h"
 #include "hpdcache_test_defs.h"
@@ -23,7 +24,7 @@ using namespace sc_dt;
 
 class hpdcache_test_transaction_req : public Transaction
 {
-public:
+  public:
     enum hpdcache_req_op_e
     {
         HPDCACHE_REQ_LOAD = 0x00,
@@ -137,11 +138,11 @@ public:
     bool is_amo() const
     {
         unsigned op = this->req_op.to_uint();
-        return ((op == HPDCACHE_REQ_AMO_SWAP) || (op == HPDCACHE_REQ_AMO_ADD)
-                || (op == HPDCACHE_REQ_AMO_AND) || (op == HPDCACHE_REQ_AMO_OR)
-                || (op == HPDCACHE_REQ_AMO_XOR) || (op == HPDCACHE_REQ_AMO_MAX)
-                || (op == HPDCACHE_REQ_AMO_MAXU) || (op == HPDCACHE_REQ_AMO_MIN)
-                || (op == HPDCACHE_REQ_AMO_MINU));
+        return ((op == HPDCACHE_REQ_AMO_SWAP) || (op == HPDCACHE_REQ_AMO_ADD) ||
+                (op == HPDCACHE_REQ_AMO_AND) || (op == HPDCACHE_REQ_AMO_OR) ||
+                (op == HPDCACHE_REQ_AMO_XOR) || (op == HPDCACHE_REQ_AMO_MAX) ||
+                (op == HPDCACHE_REQ_AMO_MAXU) || (op == HPDCACHE_REQ_AMO_MIN) ||
+                (op == HPDCACHE_REQ_AMO_MINU));
     }
 
     bool is_amo_lr() const { return (req_op.to_uint() == HPDCACHE_REQ_AMO_LR); }
@@ -151,11 +152,11 @@ public:
     bool is_cmo() const
     {
         unsigned op = this->req_op.to_uint();
-        return ((op == HPDCACHE_REQ_CMO_FENCE) || (op == HPDCACHE_REQ_CMO_PREFETCH)
-                || (op == HPDCACHE_REQ_CMO_INVAL_NLINE) || (op == HPDCACHE_REQ_CMO_INVAL_ALL)
-                || (op == HPDCACHE_REQ_CMO_FLUSH_NLINE) || (op == HPDCACHE_REQ_CMO_FLUSH_ALL)
-                || (op == HPDCACHE_REQ_CMO_FLUSH_INVAL_NLINE)
-                || (op == HPDCACHE_REQ_CMO_FLUSH_INVAL_ALL));
+        return ((op == HPDCACHE_REQ_CMO_FENCE) || (op == HPDCACHE_REQ_CMO_PREFETCH) ||
+                (op == HPDCACHE_REQ_CMO_INVAL_NLINE) || (op == HPDCACHE_REQ_CMO_INVAL_ALL) ||
+                (op == HPDCACHE_REQ_CMO_FLUSH_NLINE) || (op == HPDCACHE_REQ_CMO_FLUSH_ALL) ||
+                (op == HPDCACHE_REQ_CMO_FLUSH_INVAL_NLINE) ||
+                (op == HPDCACHE_REQ_CMO_FLUSH_INVAL_ALL));
     }
 
     bool is_cmo_prefetch() const
@@ -182,91 +183,91 @@ public:
         return ((addr * 8) / HPDCACHE_WORD_WIDTH) % HPDCACHE_CL_WORDS;
     }
 
-    static const char* op_to_string(unsigned int op)
+    static const char *op_to_string(unsigned int op)
     {
         switch (op) {
-            case HPDCACHE_REQ_LOAD:
-                return "LOAD";
-            case HPDCACHE_REQ_STORE:
-                return "STORE";
-            case HPDCACHE_REQ_AMO_LR:
-                return "LR";
-            case HPDCACHE_REQ_AMO_SC:
-                return "SC";
-            case HPDCACHE_REQ_AMO_SWAP:
-                return "AMO_SWAP";
-            case HPDCACHE_REQ_AMO_ADD:
-                return "AMO_ADD";
-            case HPDCACHE_REQ_AMO_AND:
-                return "AMO_AND";
-            case HPDCACHE_REQ_AMO_OR:
-                return "AMO_OR";
-            case HPDCACHE_REQ_AMO_XOR:
-                return "AMO_XOR";
-            case HPDCACHE_REQ_AMO_MAX:
-                return "AMO_MAX";
-            case HPDCACHE_REQ_AMO_MAXU:
-                return "AMO_MAXU";
-            case HPDCACHE_REQ_AMO_MIN:
-                return "AMO_MIN";
-            case HPDCACHE_REQ_AMO_MINU:
-                return "AMO_MINU";
-            case HPDCACHE_REQ_CMO_FENCE:
-                return "CMO_FENCE";
-            case HPDCACHE_REQ_CMO_PREFETCH:
-                return "CMO_PREFETCH";
-            case HPDCACHE_REQ_CMO_INVAL_NLINE:
-                return "CMO_INVAL_NLINE";
-            case HPDCACHE_REQ_CMO_INVAL_ALL:
-                return "CMO_INVAL_ALL";
-            case HPDCACHE_REQ_CMO_FLUSH_NLINE:
-                return "CMO_FLUSH_NLINE";
-            case HPDCACHE_REQ_CMO_FLUSH_ALL:
-                return "CMO_FLUSH_ALL";
-            case HPDCACHE_REQ_CMO_FLUSH_INVAL_NLINE:
-                return "CMO_FLUSH_INVAL_NLINE";
-            case HPDCACHE_REQ_CMO_FLUSH_INVAL_ALL:
-                return "CMO_FLUSH_INVAL_ALL";
-            default:
-                return "UNKNOWN";
+        case HPDCACHE_REQ_LOAD:
+            return "LOAD";
+        case HPDCACHE_REQ_STORE:
+            return "STORE";
+        case HPDCACHE_REQ_AMO_LR:
+            return "LR";
+        case HPDCACHE_REQ_AMO_SC:
+            return "SC";
+        case HPDCACHE_REQ_AMO_SWAP:
+            return "AMO_SWAP";
+        case HPDCACHE_REQ_AMO_ADD:
+            return "AMO_ADD";
+        case HPDCACHE_REQ_AMO_AND:
+            return "AMO_AND";
+        case HPDCACHE_REQ_AMO_OR:
+            return "AMO_OR";
+        case HPDCACHE_REQ_AMO_XOR:
+            return "AMO_XOR";
+        case HPDCACHE_REQ_AMO_MAX:
+            return "AMO_MAX";
+        case HPDCACHE_REQ_AMO_MAXU:
+            return "AMO_MAXU";
+        case HPDCACHE_REQ_AMO_MIN:
+            return "AMO_MIN";
+        case HPDCACHE_REQ_AMO_MINU:
+            return "AMO_MINU";
+        case HPDCACHE_REQ_CMO_FENCE:
+            return "CMO_FENCE";
+        case HPDCACHE_REQ_CMO_PREFETCH:
+            return "CMO_PREFETCH";
+        case HPDCACHE_REQ_CMO_INVAL_NLINE:
+            return "CMO_INVAL_NLINE";
+        case HPDCACHE_REQ_CMO_INVAL_ALL:
+            return "CMO_INVAL_ALL";
+        case HPDCACHE_REQ_CMO_FLUSH_NLINE:
+            return "CMO_FLUSH_NLINE";
+        case HPDCACHE_REQ_CMO_FLUSH_ALL:
+            return "CMO_FLUSH_ALL";
+        case HPDCACHE_REQ_CMO_FLUSH_INVAL_NLINE:
+            return "CMO_FLUSH_INVAL_NLINE";
+        case HPDCACHE_REQ_CMO_FLUSH_INVAL_ALL:
+            return "CMO_FLUSH_INVAL_ALL";
+        default:
+            return "UNKNOWN";
         }
     }
 
-    static const char* cmo_to_string(unsigned int cmo)
+    static const char *cmo_to_string(unsigned int cmo)
     {
         switch (cmo) {
-            case HPDCACHE_REQ_CMO_FENCE:
-                return "CMO_FENCE";
-            case HPDCACHE_REQ_CMO_PREFETCH:
-                return "CMO_PREFETCH";
-            case HPDCACHE_REQ_CMO_INVAL_NLINE:
-                return "CMO_INVAL_NLINE";
-            case HPDCACHE_REQ_CMO_INVAL_ALL:
-                return "CMO_INVAL_ALL";
-            case HPDCACHE_REQ_CMO_FLUSH_NLINE:
-                return "CMO_FLUSH_NLINE";
-            case HPDCACHE_REQ_CMO_FLUSH_ALL:
-                return "CMO_FLUSH_ALL";
-            case HPDCACHE_REQ_CMO_FLUSH_INVAL_NLINE:
-                return "CMO_FLUSH_INVAL_NLINE";
-            case HPDCACHE_REQ_CMO_FLUSH_INVAL_ALL:
-                return "CMO_FLUSH_INVAL_ALL";
-            default:
-                return "UNKNOWN";
+        case HPDCACHE_REQ_CMO_FENCE:
+            return "CMO_FENCE";
+        case HPDCACHE_REQ_CMO_PREFETCH:
+            return "CMO_PREFETCH";
+        case HPDCACHE_REQ_CMO_INVAL_NLINE:
+            return "CMO_INVAL_NLINE";
+        case HPDCACHE_REQ_CMO_INVAL_ALL:
+            return "CMO_INVAL_ALL";
+        case HPDCACHE_REQ_CMO_FLUSH_NLINE:
+            return "CMO_FLUSH_NLINE";
+        case HPDCACHE_REQ_CMO_FLUSH_ALL:
+            return "CMO_FLUSH_ALL";
+        case HPDCACHE_REQ_CMO_FLUSH_INVAL_NLINE:
+            return "CMO_FLUSH_INVAL_NLINE";
+        case HPDCACHE_REQ_CMO_FLUSH_INVAL_ALL:
+            return "CMO_FLUSH_INVAL_ALL";
+        default:
+            return "UNKNOWN";
         }
     }
 
-    static const char* wr_policy_to_string(hpdcache_wr_policy_hint_e hint)
+    static const char *wr_policy_to_string(hpdcache_wr_policy_hint_e hint)
     {
         switch (hint) {
-            case HPDCACHE_WR_POLICY_AUTO:
-                return "WR_POLICY_AUTO";
-            case HPDCACHE_WR_POLICY_WB:
-                return "WR_POLICY_WB";
-            case HPDCACHE_WR_POLICY_WT:
-                return "WR_POLICY_WT";
-            default:
-                return "UNKNOWN";
+        case HPDCACHE_WR_POLICY_AUTO:
+            return "WR_POLICY_AUTO";
+        case HPDCACHE_WR_POLICY_WB:
+            return "WR_POLICY_WB";
+        case HPDCACHE_WR_POLICY_WT:
+            return "WR_POLICY_WT";
+        default:
+            return "UNKNOWN";
         }
     }
 
@@ -277,23 +278,22 @@ public:
         unsigned op = this->req_op.to_uint();
 
         switch (op) {
-            case HPDCACHE_REQ_STORE:
-            case HPDCACHE_REQ_AMO_SC:
-            case HPDCACHE_REQ_AMO_SWAP:
-            case HPDCACHE_REQ_AMO_ADD:
-            case HPDCACHE_REQ_AMO_AND:
-            case HPDCACHE_REQ_AMO_OR:
-            case HPDCACHE_REQ_AMO_XOR:
-            case HPDCACHE_REQ_AMO_MAX:
-            case HPDCACHE_REQ_AMO_MAXU:
-            case HPDCACHE_REQ_AMO_MIN:
-            case HPDCACHE_REQ_AMO_MINU:
-                contains_data = true;
-                break;
+        case HPDCACHE_REQ_STORE:
+        case HPDCACHE_REQ_AMO_SC:
+        case HPDCACHE_REQ_AMO_SWAP:
+        case HPDCACHE_REQ_AMO_ADD:
+        case HPDCACHE_REQ_AMO_AND:
+        case HPDCACHE_REQ_AMO_OR:
+        case HPDCACHE_REQ_AMO_XOR:
+        case HPDCACHE_REQ_AMO_MAX:
+        case HPDCACHE_REQ_AMO_MAXU:
+        case HPDCACHE_REQ_AMO_MIN:
+        case HPDCACHE_REQ_AMO_MINU:
+            contains_data = true;
+            break;
         }
-        os << "CORE_REQ"
-           << " / @ = " << req_addr.to_string(SC_HEX) << " / " << op_to_string(op) << " / SET = 0x"
-           << std::hex << get_cache_set() << std::dec << " / WORD = 0x" << std::hex
+        os << "CORE_REQ" << " / @ = " << req_addr.to_string(SC_HEX) << " / " << op_to_string(op)
+           << " / SET = 0x" << std::hex << get_cache_set() << std::dec << " / WORD = 0x" << std::hex
            << get_cache_word() << std::dec << " / TAG = 0x" << std::hex << get_cache_tag()
            << std::dec << " / SID = 0x" << std::hex << req_sid.to_uint() << std::dec
            << " / TID = 0x" << std::hex << req_tid.to_uint() << std::dec
@@ -326,7 +326,7 @@ public:
         return os.str();
     }
 
-    friend std::ostream& operator<<(std::ostream& os, const hpdcache_test_transaction_req& req)
+    friend std::ostream &operator<<(std::ostream &os, const hpdcache_test_transaction_req &req)
     {
         os << req.to_string();
         return os;
@@ -335,7 +335,7 @@ public:
 
 class hpdcache_test_transaction_resp : public Transaction
 {
-public:
+  public:
     //  response
     sc_bv<HPDCACHE_REQ_DATA_WIDTH> rsp_rdata;
     sc_bv<HPDCACHE_REQ_SRC_ID_WIDTH> rsp_sid;
@@ -365,7 +365,7 @@ public:
         return os.str();
     }
 
-    friend std::ostream& operator<<(std::ostream& os, const hpdcache_test_transaction_resp& resp)
+    friend std::ostream &operator<<(std::ostream &os, const hpdcache_test_transaction_resp &resp)
     {
         os << resp.to_string();
         return os;
@@ -374,7 +374,7 @@ public:
 
 class hpdcache_test_transaction_mem_req
 {
-public:
+  public:
     uint64_t addr;
     uint32_t len;
     uint32_t size;
@@ -384,13 +384,7 @@ public:
     bool cacheable;
 
     hpdcache_test_transaction_mem_req()
-      : addr(0)
-      , len(0)
-      , size(0)
-      , id(0)
-      , command(0)
-      , atomic(0)
-      , cacheable(false)
+        : addr(0), len(0), size(0), id(0), command(0), atomic(0), cacheable(false)
     {
     }
 
@@ -418,64 +412,64 @@ public:
 
     bool is_amo() const
     {
-        return ((command == hpdcache_mem_command_e::HPDCACHE_MEM_ATOMIC)
-                && (atomic != hpdcache_mem_atomic_e::HPDCACHE_MEM_ATOMIC_STEX)
-                && (atomic != hpdcache_mem_atomic_e::HPDCACHE_MEM_ATOMIC_LDEX));
+        return ((command == hpdcache_mem_command_e::HPDCACHE_MEM_ATOMIC) &&
+                (atomic != hpdcache_mem_atomic_e::HPDCACHE_MEM_ATOMIC_STEX) &&
+                (atomic != hpdcache_mem_atomic_e::HPDCACHE_MEM_ATOMIC_LDEX));
     }
 
     bool is_stex() const
     {
-        return ((command == hpdcache_mem_command_e::HPDCACHE_MEM_ATOMIC)
-                && (atomic == hpdcache_mem_atomic_e::HPDCACHE_MEM_ATOMIC_STEX));
+        return ((command == hpdcache_mem_command_e::HPDCACHE_MEM_ATOMIC) &&
+                (atomic == hpdcache_mem_atomic_e::HPDCACHE_MEM_ATOMIC_STEX));
     }
 
     bool is_ldex() const
     {
-        return ((command == hpdcache_mem_command_e::HPDCACHE_MEM_ATOMIC)
-                && (atomic == hpdcache_mem_atomic_e::HPDCACHE_MEM_ATOMIC_LDEX));
+        return ((command == hpdcache_mem_command_e::HPDCACHE_MEM_ATOMIC) &&
+                (atomic == hpdcache_mem_atomic_e::HPDCACHE_MEM_ATOMIC_LDEX));
     }
 
-    static const char* command_to_string(unsigned int command)
+    static const char *command_to_string(unsigned int command)
     {
         switch (command) {
-            case HPDCACHE_MEM_READ:
-                return "READ";
-            case HPDCACHE_MEM_WRITE:
-                return "STORE";
-            case HPDCACHE_MEM_ATOMIC:
-                return "ATOMIC";
-            default:
-                return "UNKNOWN";
+        case HPDCACHE_MEM_READ:
+            return "READ";
+        case HPDCACHE_MEM_WRITE:
+            return "STORE";
+        case HPDCACHE_MEM_ATOMIC:
+            return "ATOMIC";
+        default:
+            return "UNKNOWN";
         }
     }
 
-    static const char* atomic_to_string(unsigned int atomic)
+    static const char *atomic_to_string(unsigned int atomic)
     {
         switch (atomic) {
-            case HPDCACHE_MEM_ATOMIC_ADD:
-                return "ATOMIC_ADD";
-            case HPDCACHE_MEM_ATOMIC_CLR:
-                return "ATOMIC_CLR";
-            case HPDCACHE_MEM_ATOMIC_SET:
-                return "ATOMIC_SET";
-            case HPDCACHE_MEM_ATOMIC_EOR:
-                return "ATOMIC_EOR";
-            case HPDCACHE_MEM_ATOMIC_SMAX:
-                return "ATOMIC_SMAX";
-            case HPDCACHE_MEM_ATOMIC_SMIN:
-                return "ATOMIC_SMIN";
-            case HPDCACHE_MEM_ATOMIC_UMAX:
-                return "ATOMIC_UMAX";
-            case HPDCACHE_MEM_ATOMIC_UMIN:
-                return "ATOMIC_UMIN";
-            case HPDCACHE_MEM_ATOMIC_SWAP:
-                return "ATOMIC_SWAP";
-            case HPDCACHE_MEM_ATOMIC_LDEX:
-                return "ATOMIC_LDEX";
-            case HPDCACHE_MEM_ATOMIC_STEX:
-                return "ATOMIC_STEX";
-            default:
-                return "UNKNOWN";
+        case HPDCACHE_MEM_ATOMIC_ADD:
+            return "ATOMIC_ADD";
+        case HPDCACHE_MEM_ATOMIC_CLR:
+            return "ATOMIC_CLR";
+        case HPDCACHE_MEM_ATOMIC_SET:
+            return "ATOMIC_SET";
+        case HPDCACHE_MEM_ATOMIC_EOR:
+            return "ATOMIC_EOR";
+        case HPDCACHE_MEM_ATOMIC_SMAX:
+            return "ATOMIC_SMAX";
+        case HPDCACHE_MEM_ATOMIC_SMIN:
+            return "ATOMIC_SMIN";
+        case HPDCACHE_MEM_ATOMIC_UMAX:
+            return "ATOMIC_UMAX";
+        case HPDCACHE_MEM_ATOMIC_UMIN:
+            return "ATOMIC_UMIN";
+        case HPDCACHE_MEM_ATOMIC_SWAP:
+            return "ATOMIC_SWAP";
+        case HPDCACHE_MEM_ATOMIC_LDEX:
+            return "ATOMIC_LDEX";
+        case HPDCACHE_MEM_ATOMIC_STEX:
+            return "ATOMIC_STEX";
+        default:
+            return "UNKNOWN";
         }
     }
 
@@ -484,25 +478,22 @@ public:
 
 class hpdcache_test_transaction_mem_read_req : public hpdcache_test_transaction_mem_req
 {
-public:
-    hpdcache_test_transaction_mem_read_req()
-      : hpdcache_test_transaction_mem_req()
-    {
-    }
+  public:
+    hpdcache_test_transaction_mem_read_req() : hpdcache_test_transaction_mem_req() {}
 
     const std::string to_string() const
     {
         std::stringstream os;
 
-        os << "MEM_READ_REQ / @ = " << std::hex << addr << std::dec
-           << " / CMD = " << command_to_string(command) << " / LEN = " << std::hex << len
-           << std::dec << " / SIZE = " << std::hex << size << std::dec << " / ID = 0x" << std::hex
+        os << "MEM_READ_REQ / @ = 0x" << std::hex << addr << std::dec
+           << " / CMD = " << command_to_string(command) << " / LEN = 0x" << std::hex << len
+           << std::dec << " / SIZE = 0x" << std::hex << size << std::dec << " / ID = 0x" << std::hex
            << id << std::dec << (cacheable ? " / CACHEABLE" : " / UNCACHEABLE");
         return os.str();
     }
 
-    friend std::ostream& operator<<(std::ostream& os,
-                                    const hpdcache_test_transaction_mem_read_req& req)
+    friend std::ostream &operator<<(std::ostream &os,
+                                    const hpdcache_test_transaction_mem_read_req &req)
     {
         os << req.to_string();
         return os;
@@ -511,16 +502,13 @@ public:
 
 class hpdcache_test_transaction_mem_write_req : public hpdcache_test_transaction_mem_req
 {
-public:
+  public:
     sc_bv<HPDCACHE_MEM_DATA_WIDTH> data;
     sc_bv<HPDCACHE_MEM_DATA_WIDTH / 8> be;
     bool last;
 
     hpdcache_test_transaction_mem_write_req()
-      : data(0)
-      , be(0)
-      , last(false)
-      , hpdcache_test_transaction_mem_req()
+        : data(0), be(0), last(false), hpdcache_test_transaction_mem_req()
     {
     }
 
@@ -528,22 +516,22 @@ public:
     {
         std::stringstream os;
 
-        os << "MEM_WRITE_REQ / @ = " << std::hex << addr << std::dec
+        os << "MEM_WRITE_REQ / @ = 0x" << std::hex << addr << std::dec
            << " / COMMAND = " << command_to_string(command);
 
         if (command == HPDCACHE_MEM_ATOMIC) {
             os << " / ATOMIC = " << atomic_to_string(atomic);
         }
 
-        os << " / LEN = " << std::hex << len << std::dec << " / SIZE = " << std::hex << size
+        os << " / LEN = 0x" << std::hex << len << std::dec << " / SIZE = 0x" << std::hex << size
            << std::dec << " / ID = 0x" << std::hex << id << std::dec
            << " / DATA = " << data.to_string(SC_HEX) << " / BE = " << be.to_string(SC_HEX)
            << (last ? " / LAST" : " ") << (cacheable ? " / CACHEABLE" : " / UNCACHEABLE");
         return os.str();
     }
 
-    friend std::ostream& operator<<(std::ostream& os,
-                                    const hpdcache_test_transaction_mem_write_req& req)
+    friend std::ostream &operator<<(std::ostream &os,
+                                    const hpdcache_test_transaction_mem_write_req &req)
     {
         os << req.to_string();
         return os;
@@ -552,19 +540,13 @@ public:
 
 class hpdcache_test_transaction_mem_read_resp
 {
-public:
+  public:
     uint32_t error;
     uint32_t id;
     sc_bv<HPDCACHE_MEM_DATA_WIDTH> data;
     bool last;
 
-    hpdcache_test_transaction_mem_read_resp()
-      : error(0)
-      , id(0)
-      , data(0)
-      , last(false)
-    {
-    }
+    hpdcache_test_transaction_mem_read_resp() : error(0), id(0), data(0), last(false) {}
 
     const std::string to_string() const
     {
@@ -575,8 +557,8 @@ public:
         return os.str();
     }
 
-    friend std::ostream& operator<<(std::ostream& os,
-                                    const hpdcache_test_transaction_mem_read_resp& resp)
+    friend std::ostream &operator<<(std::ostream &os,
+                                    const hpdcache_test_transaction_mem_read_resp &resp)
     {
         os << resp.to_string();
         return os;
@@ -585,30 +567,24 @@ public:
 
 class hpdcache_test_transaction_mem_write_resp
 {
-public:
+  public:
     bool is_atomic;
     uint32_t error;
     uint32_t id;
 
-    hpdcache_test_transaction_mem_write_resp()
-      : is_atomic(false)
-      , error(0)
-      , id(0)
-    {
-    }
+    hpdcache_test_transaction_mem_write_resp() : is_atomic(false), error(0), id(0) {}
 
     const std::string to_string() const
     {
         std::stringstream os;
 
-        os << "MEM_WRITE_RESP"
-           << " / ID = 0x" << std::hex << id << std::dec << (error != 0 ? " / ERROR" : "")
-           << (is_atomic ? " / ATOMIC" : "");
+        os << "MEM_WRITE_RESP" << " / ID = 0x" << std::hex << id << std::dec
+           << (error != 0 ? " / ERROR" : "") << (is_atomic ? " / ATOMIC" : "");
         return os.str();
     }
 
-    friend std::ostream& operator<<(std::ostream& os,
-                                    const hpdcache_test_transaction_mem_write_resp& resp)
+    friend std::ostream &operator<<(std::ostream &os,
+                                    const hpdcache_test_transaction_mem_write_resp &resp)
     {
         os << resp.to_string();
         return os;
