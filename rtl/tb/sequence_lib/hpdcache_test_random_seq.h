@@ -250,7 +250,7 @@ class hpdcache_test_random_seq : public hpdcache_test_sequence
 #if CONF_HPDCACHE_TEST_DOUBLE_FAULT_INJ
             t->req_fault.fault_mask = fault_inj_double_dist(rg) ? 0xA0 : 0x20;
 #else
-            t->req_fault.fault_mask = 0xA0;
+            t->req_fault.fault_mask = 0x20;
 #endif
         }
 #endif
