@@ -30,6 +30,7 @@
 #include "hpdcache_test_scoreboard.h"
 #include "hpdcache_test_sequence.h"
 #include "logger.h"
+#include "sequence_lib/hpdcache_test_ecc_rtab_seq.h"
 #include "sequence_lib/hpdcache_test_from_trace_seq.h"
 #include "sequence_lib/hpdcache_test_random_seq.h"
 #include "sequence_lib/hpdcache_test_read_seq.h"
@@ -324,6 +325,8 @@ class hpdcache_test
             s->mem_resp_write_valid_i(mem_resp_write_valid);
             s->mem_resp_write_ready_i(mem_resp_write_ready);
             seq = s;
+        } else if (seq_name == "ecc_rtab") {
+            seq = std::make_shared<hpdcache_test_ecc_rtab_seq>("ecc_rtab");
         } else if (seq_name == "from_trace") {
             seq = std::make_shared<hpdcache_test_from_trace_seq>("from_trace", file_name);
         } else {

@@ -146,6 +146,18 @@ make nonregression <other nonreg options> \
                    CONF_HPDCACHE_TEST_FAULT_INJ_DIR=1
 ```
 
+The ```ecc_rtab``` sequence is a directed test of the recovery from an
+uncorrectable error in the directory, hit by a request replayed from the replay
+table, in a write-back cache. It requires a testbench built with fault injection
+in the directory:
+```bash
+make build CONF_HPDCACHE_TEST_FAULT_INJ=1 \
+           CONF_HPDCACHE_TEST_FAULT_INJ_DIR=1
+make run SEQUENCE=ecc_rtab \
+         CONF_HPDCACHE_TEST_FAULT_INJ=1 \
+         CONF_HPDCACHE_TEST_FAULT_INJ_DIR=1
+```
+
 ### Logs
 
 The build logs are written in the `build/` subdirectory. The simulation logs

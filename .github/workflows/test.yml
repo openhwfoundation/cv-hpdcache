@@ -112,6 +112,22 @@ jobs:
           config: 'configs/default_config.mk'
           inject_single_faults: '1'
 
+  run_ecc_rtab:
+    runs-on: ubuntu-latest
+    name: run_ecc_rtab
+    needs: build
+    steps:
+      - uses: actions/checkout@master
+
+      - id: run_ecc_rtab_sequence
+        uses: ./.github/actions/run_sequence
+        with:
+          seqname: 'ecc_rtab'
+          ntrans: '1'
+          ntests: '1'
+          config: 'configs/default_config.mk'
+          inject_single_faults: '1'
+
   run_unique_set:
     runs-on: ubuntu-latest
     name: run_unique_set
