@@ -669,6 +669,12 @@ import hpdcache_pkg::*;
                         st1_rsp_valid_o = HPDcacheCfg.u.wbEn && st1_req_need_rsp_i;
                         st1_rsp_error_o = HPDcacheCfg.u.wbEn && st1_req_need_rsp_i;
 
+                        //  In write-back mode the request ends here (with an error), so if it
+                        //  comes from the replay table, remove it from there. Otherwise, it stays
+                        //  in the table, but cannot be replayed (it is no longer the head of its
+                        //  list), and blocks later fences and CMOs forever.
+                        st1_rtab_commit_o = HPDcacheCfg.u.wbEn && st1_req_rtab_i;
+
                         //  Performance event
                         if (HPDcacheCfg.u.wbEn) begin
                             evt_cache_dir_unc_err_o = st1_dir_err_unc_i;
